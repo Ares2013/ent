@@ -11,18 +11,19 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/facebook/ent/entc/integration/customid/ent/migrate"
+	"entgo.io/ent/entc/integration/customid/ent/migrate"
 	"github.com/google/uuid"
 
-	"github.com/facebook/ent/entc/integration/customid/ent/blob"
-	"github.com/facebook/ent/entc/integration/customid/ent/car"
-	"github.com/facebook/ent/entc/integration/customid/ent/group"
-	"github.com/facebook/ent/entc/integration/customid/ent/pet"
-	"github.com/facebook/ent/entc/integration/customid/ent/user"
+	"entgo.io/ent/entc/integration/customid/ent/blob"
+	"entgo.io/ent/entc/integration/customid/ent/car"
+	"entgo.io/ent/entc/integration/customid/ent/group"
+	"entgo.io/ent/entc/integration/customid/ent/mixinid"
+	"entgo.io/ent/entc/integration/customid/ent/pet"
+	"entgo.io/ent/entc/integration/customid/ent/user"
 
-	"github.com/facebook/ent/dialect"
-	"github.com/facebook/ent/dialect/sql"
-	"github.com/facebook/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/dialect"
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
 )
 
 // Client is the client that holds all ent builders.
@@ -36,6 +37,8 @@ type Client struct {
 	Car *CarClient
 	// Group is the client for interacting with the Group builders.
 	Group *GroupClient
+	// MixinID is the client for interacting with the MixinID builders.
+	MixinID *MixinIDClient
 	// Pet is the client for interacting with the Pet builders.
 	Pet *PetClient
 	// User is the client for interacting with the User builders.
@@ -56,6 +59,7 @@ func (c *Client) init() {
 	c.Blob = NewBlobClient(c.config)
 	c.Car = NewCarClient(c.config)
 	c.Group = NewGroupClient(c.config)
+	c.MixinID = NewMixinIDClient(c.config)
 	c.Pet = NewPetClient(c.config)
 	c.User = NewUserClient(c.config)
 }
@@ -84,37 +88,43 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	}
 	tx, err := newTx(ctx, c.driver)
 	if err != nil {
-		return nil, fmt.Errorf("ent: starting a transaction: %v", err)
+		return nil, fmt.Errorf("ent: starting a transaction: %w", err)
 	}
-	cfg := config{driver: tx, log: c.log, debug: c.debug, hooks: c.hooks}
+	cfg := c.config
+	cfg.driver = tx
 	return &Tx{
-		ctx:    ctx,
-		config: cfg,
-		Blob:   NewBlobClient(cfg),
-		Car:    NewCarClient(cfg),
-		Group:  NewGroupClient(cfg),
-		Pet:    NewPetClient(cfg),
-		User:   NewUserClient(cfg),
+		ctx:     ctx,
+		config:  cfg,
+		Blob:    NewBlobClient(cfg),
+		Car:     NewCarClient(cfg),
+		Group:   NewGroupClient(cfg),
+		MixinID: NewMixinIDClient(cfg),
+		Pet:     NewPetClient(cfg),
+		User:    NewUserClient(cfg),
 	}, nil
 }
 
-// BeginTx returns a transactional client with options.
+// BeginTx returns a transactional client with specified options.
 func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) {
 	if _, ok := c.driver.(*txDriver); ok {
 		return nil, fmt.Errorf("ent: cannot start a transaction within a transaction")
 	}
-	tx, err := c.driver.(*sql.Driver).BeginTx(ctx, opts)
+	tx, err := c.driver.(interface {
+		BeginTx(context.Context, *sql.TxOptions) (dialect.Tx, error)
+	}).BeginTx(ctx, opts)
 	if err != nil {
-		return nil, fmt.Errorf("ent: starting a transaction: %v", err)
+		return nil, fmt.Errorf("ent: starting a transaction: %w", err)
 	}
-	cfg := config{driver: &txDriver{tx: tx, drv: c.driver}, log: c.log, debug: c.debug, hooks: c.hooks}
+	cfg := c.config
+	cfg.driver = &txDriver{tx: tx, drv: c.driver}
 	return &Tx{
-		config: cfg,
-		Blob:   NewBlobClient(cfg),
-		Car:    NewCarClient(cfg),
-		Group:  NewGroupClient(cfg),
-		Pet:    NewPetClient(cfg),
-		User:   NewUserClient(cfg),
+		config:  cfg,
+		Blob:    NewBlobClient(cfg),
+		Car:     NewCarClient(cfg),
+		Group:   NewGroupClient(cfg),
+		MixinID: NewMixinIDClient(cfg),
+		Pet:     NewPetClient(cfg),
+		User:    NewUserClient(cfg),
 	}, nil
 }
 
@@ -129,7 +139,8 @@ func (c *Client) Debug() *Client {
 	if c.debug {
 		return c
 	}
-	cfg := config{driver: dialect.Debug(c.driver, c.log), log: c.log, debug: true, hooks: c.hooks}
+	cfg := c.config
+	cfg.driver = dialect.Debug(c.driver, c.log)
 	client := &Client{config: cfg}
 	client.init()
 	return client
@@ -146,6 +157,7 @@ func (c *Client) Use(hooks ...Hook) {
 	c.Blob.Use(hooks...)
 	c.Car.Use(hooks...)
 	c.Group.Use(hooks...)
+	c.MixinID.Use(hooks...)
 	c.Pet.Use(hooks...)
 	c.User.Use(hooks...)
 }
@@ -172,7 +184,7 @@ func (c *BlobClient) Create() *BlobCreate {
 	return &BlobCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
-// BulkCreate returns a builder for creating a bulk of Blob entities.
+// CreateBulk returns a builder for creating a bulk of Blob entities.
 func (c *BlobClient) CreateBulk(builders ...*BlobCreate) *BlobCreateBulk {
 	return &BlobCreateBulk{config: c.config, builders: builders}
 }
@@ -226,11 +238,11 @@ func (c *BlobClient) Get(ctx context.Context, id uuid.UUID) (*Blob, error) {
 
 // GetX is like Get, but panics if an error occurs.
 func (c *BlobClient) GetX(ctx context.Context, id uuid.UUID) *Blob {
-	b, err := c.Get(ctx, id)
+	obj, err := c.Get(ctx, id)
 	if err != nil {
 		panic(err)
 	}
-	return b
+	return obj
 }
 
 // QueryParent queries the parent edge of a Blob.
@@ -292,7 +304,7 @@ func (c *CarClient) Create() *CarCreate {
 	return &CarCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
-// BulkCreate returns a builder for creating a bulk of Car entities.
+// CreateBulk returns a builder for creating a bulk of Car entities.
 func (c *CarClient) CreateBulk(builders ...*CarCreate) *CarCreateBulk {
 	return &CarCreateBulk{config: c.config, builders: builders}
 }
@@ -346,11 +358,11 @@ func (c *CarClient) Get(ctx context.Context, id int) (*Car, error) {
 
 // GetX is like Get, but panics if an error occurs.
 func (c *CarClient) GetX(ctx context.Context, id int) *Car {
-	ca, err := c.Get(ctx, id)
+	obj, err := c.Get(ctx, id)
 	if err != nil {
 		panic(err)
 	}
-	return ca
+	return obj
 }
 
 // QueryOwner queries the owner edge of a Car.
@@ -396,7 +408,7 @@ func (c *GroupClient) Create() *GroupCreate {
 	return &GroupCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
-// BulkCreate returns a builder for creating a bulk of Group entities.
+// CreateBulk returns a builder for creating a bulk of Group entities.
 func (c *GroupClient) CreateBulk(builders ...*GroupCreate) *GroupCreateBulk {
 	return &GroupCreateBulk{config: c.config, builders: builders}
 }
@@ -450,11 +462,11 @@ func (c *GroupClient) Get(ctx context.Context, id int) (*Group, error) {
 
 // GetX is like Get, but panics if an error occurs.
 func (c *GroupClient) GetX(ctx context.Context, id int) *Group {
-	gr, err := c.Get(ctx, id)
+	obj, err := c.Get(ctx, id)
 	if err != nil {
 		panic(err)
 	}
-	return gr
+	return obj
 }
 
 // QueryUsers queries the users edge of a Group.
@@ -476,6 +488,94 @@ func (c *GroupClient) QueryUsers(gr *Group) *UserQuery {
 // Hooks returns the client hooks.
 func (c *GroupClient) Hooks() []Hook {
 	return c.hooks.Group
+}
+
+// MixinIDClient is a client for the MixinID schema.
+type MixinIDClient struct {
+	config
+}
+
+// NewMixinIDClient returns a client for the MixinID from the given config.
+func NewMixinIDClient(c config) *MixinIDClient {
+	return &MixinIDClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `mixinid.Hooks(f(g(h())))`.
+func (c *MixinIDClient) Use(hooks ...Hook) {
+	c.hooks.MixinID = append(c.hooks.MixinID, hooks...)
+}
+
+// Create returns a create builder for MixinID.
+func (c *MixinIDClient) Create() *MixinIDCreate {
+	mutation := newMixinIDMutation(c.config, OpCreate)
+	return &MixinIDCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of MixinID entities.
+func (c *MixinIDClient) CreateBulk(builders ...*MixinIDCreate) *MixinIDCreateBulk {
+	return &MixinIDCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for MixinID.
+func (c *MixinIDClient) Update() *MixinIDUpdate {
+	mutation := newMixinIDMutation(c.config, OpUpdate)
+	return &MixinIDUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *MixinIDClient) UpdateOne(mi *MixinID) *MixinIDUpdateOne {
+	mutation := newMixinIDMutation(c.config, OpUpdateOne, withMixinID(mi))
+	return &MixinIDUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *MixinIDClient) UpdateOneID(id uuid.UUID) *MixinIDUpdateOne {
+	mutation := newMixinIDMutation(c.config, OpUpdateOne, withMixinIDID(id))
+	return &MixinIDUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for MixinID.
+func (c *MixinIDClient) Delete() *MixinIDDelete {
+	mutation := newMixinIDMutation(c.config, OpDelete)
+	return &MixinIDDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a delete builder for the given entity.
+func (c *MixinIDClient) DeleteOne(mi *MixinID) *MixinIDDeleteOne {
+	return c.DeleteOneID(mi.ID)
+}
+
+// DeleteOneID returns a delete builder for the given id.
+func (c *MixinIDClient) DeleteOneID(id uuid.UUID) *MixinIDDeleteOne {
+	builder := c.Delete().Where(mixinid.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &MixinIDDeleteOne{builder}
+}
+
+// Query returns a query builder for MixinID.
+func (c *MixinIDClient) Query() *MixinIDQuery {
+	return &MixinIDQuery{config: c.config}
+}
+
+// Get returns a MixinID entity by its id.
+func (c *MixinIDClient) Get(ctx context.Context, id uuid.UUID) (*MixinID, error) {
+	return c.Query().Where(mixinid.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *MixinIDClient) GetX(ctx context.Context, id uuid.UUID) *MixinID {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *MixinIDClient) Hooks() []Hook {
+	return c.hooks.MixinID
 }
 
 // PetClient is a client for the Pet schema.
@@ -500,7 +600,7 @@ func (c *PetClient) Create() *PetCreate {
 	return &PetCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
-// BulkCreate returns a builder for creating a bulk of Pet entities.
+// CreateBulk returns a builder for creating a bulk of Pet entities.
 func (c *PetClient) CreateBulk(builders ...*PetCreate) *PetCreateBulk {
 	return &PetCreateBulk{config: c.config, builders: builders}
 }
@@ -554,11 +654,11 @@ func (c *PetClient) Get(ctx context.Context, id string) (*Pet, error) {
 
 // GetX is like Get, but panics if an error occurs.
 func (c *PetClient) GetX(ctx context.Context, id string) *Pet {
-	pe, err := c.Get(ctx, id)
+	obj, err := c.Get(ctx, id)
 	if err != nil {
 		panic(err)
 	}
-	return pe
+	return obj
 }
 
 // QueryOwner queries the owner edge of a Pet.
@@ -652,7 +752,7 @@ func (c *UserClient) Create() *UserCreate {
 	return &UserCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
-// BulkCreate returns a builder for creating a bulk of User entities.
+// CreateBulk returns a builder for creating a bulk of User entities.
 func (c *UserClient) CreateBulk(builders ...*UserCreate) *UserCreateBulk {
 	return &UserCreateBulk{config: c.config, builders: builders}
 }
@@ -706,11 +806,11 @@ func (c *UserClient) Get(ctx context.Context, id int) (*User, error) {
 
 // GetX is like Get, but panics if an error occurs.
 func (c *UserClient) GetX(ctx context.Context, id int) *User {
-	u, err := c.Get(ctx, id)
+	obj, err := c.Get(ctx, id)
 	if err != nil {
 		panic(err)
 	}
-	return u
+	return obj
 }
 
 // QueryGroups queries the groups edge of a User.

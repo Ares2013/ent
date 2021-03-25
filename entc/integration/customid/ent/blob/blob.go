@@ -17,12 +17,10 @@ const (
 	FieldID = "id"
 	// FieldUUID holds the string denoting the uuid field in the database.
 	FieldUUID = "uuid"
-
 	// EdgeParent holds the string denoting the parent edge name in mutations.
 	EdgeParent = "parent"
 	// EdgeLinks holds the string denoting the links edge name in mutations.
 	EdgeLinks = "links"
-
 	// Table holds the table name of the blob in the database.
 	Table = "blobs"
 	// ParentTable is the table the holds the parent relation/edge.
@@ -39,7 +37,8 @@ var Columns = []string{
 	FieldUUID,
 }
 
-// ForeignKeys holds the SQL foreign-keys that are owned by the Blob type.
+// ForeignKeys holds the SQL foreign-keys that are owned by the "blobs"
+// table and are not defined as standalone fields in the schema.
 var ForeignKeys = []string{
 	"blob_parent",
 }
@@ -50,9 +49,24 @@ var (
 	LinksPrimaryKey = []string{"blob_id", "link_id"}
 )
 
+// ValidColumn reports if the column name is valid (part of the table columns).
+func ValidColumn(column string) bool {
+	for i := range Columns {
+		if column == Columns[i] {
+			return true
+		}
+	}
+	for i := range ForeignKeys {
+		if column == ForeignKeys[i] {
+			return true
+		}
+	}
+	return false
+}
+
 var (
-	// DefaultUUID holds the default value on creation for the uuid field.
+	// DefaultUUID holds the default value on creation for the "uuid" field.
 	DefaultUUID func() uuid.UUID
-	// DefaultID holds the default value on creation for the id field.
+	// DefaultID holds the default value on creation for the "id" field.
 	DefaultID func() uuid.UUID
 )

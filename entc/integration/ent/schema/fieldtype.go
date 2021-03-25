@@ -10,12 +10,15 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"time"
 
-	"github.com/facebook/ent"
-	"github.com/facebook/ent/dialect"
-	"github.com/facebook/ent/dialect/sql"
-	"github.com/facebook/ent/entc/integration/ent/role"
-	"github.com/facebook/ent/schema/field"
+	"entgo.io/ent"
+	"entgo.io/ent/dialect"
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/entc/integration/ent/role"
+	"entgo.io/ent/schema/field"
+
+	"github.com/google/uuid"
 )
 
 // FieldType holds the schema definition for the FieldType entity.
@@ -25,7 +28,7 @@ type FieldType struct {
 }
 
 // Fields of the File.
-func (FieldType) Fields() []ent.Field {
+func (FieldType) Fields() []ent.Field { //nolint:funlen
 	return []ent.Field{
 		field.Int("int"),
 		field.Int8("int8"),
@@ -42,14 +45,15 @@ func (FieldType) Fields() []ent.Field {
 		field.Int16("nillable_int16").Optional().Nillable(),
 		field.Int32("nillable_int32").Optional().Nillable(),
 		field.Int64("nillable_int64").Optional().Nillable(),
-		field.Int32("validate_optional_int32").
-			Optional().
-			Max(100),
+		field.Int32("validate_optional_int32").Optional().Max(100),
 		field.Uint("optional_uint").Optional(),
 		field.Uint8("optional_uint8").Optional(),
 		field.Uint16("optional_uint16").Optional(),
 		field.Uint32("optional_uint32").Optional(),
 		field.Uint64("optional_uint64").Optional(),
+		field.Int64("duration").
+			GoType(time.Duration(0)).
+			Optional(),
 		field.Enum("state").
 			Values("on", "off").
 			Optional(),
@@ -77,15 +81,28 @@ func (FieldType) Fields() []ent.Field {
 			GoType(http.Dir("ndir")),
 		field.String("str").
 			Optional().
-			GoType(&sql.NullString{}),
+			GoType(&sql.NullString{}).
+			DefaultFunc(func() sql.NullString {
+				return sql.NullString{String: "default", Valid: true}
+			}),
 		field.String("null_str").
 			Optional().
 			Nillable().
-			GoType(&sql.NullString{}),
+			GoType(&sql.NullString{}).
+			DefaultFunc(func() sql.NullString {
+				return sql.NullString{String: "default", Valid: true}
+			}),
 		field.String("link").
 			Optional().
 			NotEmpty().
 			GoType(&Link{}),
+		field.Other("link_other", &Link{}).
+			SchemaType(map[string]string{
+				dialect.Postgres: "varchar",
+				dialect.MySQL:    "varchar(255)",
+				dialect.SQLite:   "varchar(255)",
+			}).
+			Optional(),
 		field.String("null_link").
 			Optional().
 			Nillable().
@@ -105,7 +122,10 @@ func (FieldType) Fields() []ent.Field {
 			GoType(&sql.NullTime{}),
 		field.Bytes("ip").
 			Optional().
-			GoType(net.IP("127.0.0.1")),
+			GoType(net.IP("127.0.0.1")).
+			DefaultFunc(func() net.IP {
+				return net.IP("127.0.0.1")
+			}),
 		field.Int("null_int64").
 			Optional().
 			GoType(&sql.NullInt64{}),
@@ -130,6 +150,18 @@ func (FieldType) Fields() []ent.Field {
 		field.Enum("role").
 			Default(string(role.Read)).
 			GoType(role.Role("role")),
+		field.String("mac").
+			Optional().
+			GoType(&MAC{}).
+			SchemaType(map[string]string{
+				dialect.Postgres: "macaddr",
+			}).
+			Validate(func(s string) error {
+				_, err := net.ParseMAC(s)
+				return err
+			}),
+		field.UUID("uuid", uuid.UUID{}).
+			Optional(),
 	}
 }
 
@@ -155,7 +187,7 @@ func (l *Link) Scan(value interface{}) (err error) {
 	case string:
 		l.URL, err = url.Parse(v)
 	default:
-		err = fmt.Errorf("unexpcted type %T", v)
+		err = fmt.Errorf("unexpected type %T", v)
 	}
 	return
 }
@@ -166,4 +198,27 @@ func (l Link) Value() (driver.Value, error) {
 		return nil, nil
 	}
 	return l.String(), nil
+}
+
+type MAC struct {
+	net.HardwareAddr
+}
+
+// Scan implements the Scanner interface.
+func (m *MAC) Scan(value interface{}) (err error) {
+	switch v := value.(type) {
+	case nil:
+	case []byte:
+		m.HardwareAddr, err = net.ParseMAC(string(v))
+	case string:
+		m.HardwareAddr, err = net.ParseMAC(v)
+	default:
+		err = fmt.Errorf("unexpected type %T", v)
+	}
+	return
+}
+
+// Value implements the driver Valuer interface.
+func (m MAC) Value() (driver.Value, error) {
+	return m.HardwareAddr.String(), nil
 }

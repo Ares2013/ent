@@ -7,9 +7,11 @@ package field
 import (
 	"errors"
 	"reflect"
+
+	"entgo.io/ent/schema"
 )
 
-//go:generate go run gen/gen.go
+//go:generate go run internal/gen.go
 
 // Int returns a new Field with type int.
 func Int(name string) *intBuilder {
@@ -172,8 +174,15 @@ func (b *intBuilder) Default(i int) *intBuilder {
 	return b
 }
 
+// DefaultFunc sets the function that is applied to set the default value
+// of the field on creation.
+func (b *intBuilder) DefaultFunc(fn interface{}) *intBuilder {
+	b.desc.Default = fn
+	return b
+}
+
 // Nillable indicates that this field is a nillable.
-// Unlike "Optional" only fields, "Nillable" fields are pointers in the generated field.
+// Unlike "Optional" only fields, "Nillable" fields are pointers in the generated struct.
 func (b *intBuilder) Nillable() *intBuilder {
 	b.desc.Nillable = true
 	return b
@@ -181,6 +190,7 @@ func (b *intBuilder) Nillable() *intBuilder {
 
 // Comment sets the comment of the field.
 func (b *intBuilder) Comment(c string) *intBuilder {
+	b.desc.Comment = c
 	return b
 }
 
@@ -247,13 +257,16 @@ func (b *intBuilder) GoType(typ interface{}) *intBuilder {
 //			Ordered: true,
 //		})
 //
-func (b *intBuilder) Annotations(annotations ...Annotation) *intBuilder {
+func (b *intBuilder) Annotations(annotations ...schema.Annotation) *intBuilder {
 	b.desc.Annotations = append(b.desc.Annotations, annotations...)
 	return b
 }
 
 // Descriptor implements the ent.Field interface by returning its descriptor.
 func (b *intBuilder) Descriptor() *Descriptor {
+	if b.desc.Default != nil {
+		b.desc.checkDefaultFunc(intType)
+	}
 	return b.desc
 }
 
@@ -312,8 +325,15 @@ func (b *uintBuilder) Default(i uint) *uintBuilder {
 	return b
 }
 
+// DefaultFunc sets the function that is applied to set the default value
+// of the field on creation.
+func (b *uintBuilder) DefaultFunc(fn interface{}) *uintBuilder {
+	b.desc.Default = fn
+	return b
+}
+
 // Nillable indicates that this field is a nillable.
-// Unlike "Optional" only fields, "Nillable" fields are pointers in the generated field.
+// Unlike "Optional" only fields, "Nillable" fields are pointers in the generated struct.
 func (b *uintBuilder) Nillable() *uintBuilder {
 	b.desc.Nillable = true
 	return b
@@ -321,6 +341,7 @@ func (b *uintBuilder) Nillable() *uintBuilder {
 
 // Comment sets the comment of the field.
 func (b *uintBuilder) Comment(c string) *uintBuilder {
+	b.desc.Comment = c
 	return b
 }
 
@@ -387,13 +408,16 @@ func (b *uintBuilder) GoType(typ interface{}) *uintBuilder {
 //			Ordered: true,
 //		})
 //
-func (b *uintBuilder) Annotations(annotations ...Annotation) *uintBuilder {
+func (b *uintBuilder) Annotations(annotations ...schema.Annotation) *uintBuilder {
 	b.desc.Annotations = append(b.desc.Annotations, annotations...)
 	return b
 }
 
 // Descriptor implements the ent.Field interface by returning its descriptor.
 func (b *uintBuilder) Descriptor() *Descriptor {
+	if b.desc.Default != nil {
+		b.desc.checkDefaultFunc(uintType)
+	}
 	return b.desc
 }
 
@@ -462,8 +486,15 @@ func (b *int8Builder) Default(i int8) *int8Builder {
 	return b
 }
 
+// DefaultFunc sets the function that is applied to set the default value
+// of the field on creation.
+func (b *int8Builder) DefaultFunc(fn interface{}) *int8Builder {
+	b.desc.Default = fn
+	return b
+}
+
 // Nillable indicates that this field is a nillable.
-// Unlike "Optional" only fields, "Nillable" fields are pointers in the generated field.
+// Unlike "Optional" only fields, "Nillable" fields are pointers in the generated struct.
 func (b *int8Builder) Nillable() *int8Builder {
 	b.desc.Nillable = true
 	return b
@@ -471,6 +502,7 @@ func (b *int8Builder) Nillable() *int8Builder {
 
 // Comment sets the comment of the field.
 func (b *int8Builder) Comment(c string) *int8Builder {
+	b.desc.Comment = c
 	return b
 }
 
@@ -537,13 +569,16 @@ func (b *int8Builder) GoType(typ interface{}) *int8Builder {
 //			Ordered: true,
 //		})
 //
-func (b *int8Builder) Annotations(annotations ...Annotation) *int8Builder {
+func (b *int8Builder) Annotations(annotations ...schema.Annotation) *int8Builder {
 	b.desc.Annotations = append(b.desc.Annotations, annotations...)
 	return b
 }
 
 // Descriptor implements the ent.Field interface by returning its descriptor.
 func (b *int8Builder) Descriptor() *Descriptor {
+	if b.desc.Default != nil {
+		b.desc.checkDefaultFunc(int8Type)
+	}
 	return b.desc
 }
 
@@ -612,8 +647,15 @@ func (b *int16Builder) Default(i int16) *int16Builder {
 	return b
 }
 
+// DefaultFunc sets the function that is applied to set the default value
+// of the field on creation.
+func (b *int16Builder) DefaultFunc(fn interface{}) *int16Builder {
+	b.desc.Default = fn
+	return b
+}
+
 // Nillable indicates that this field is a nillable.
-// Unlike "Optional" only fields, "Nillable" fields are pointers in the generated field.
+// Unlike "Optional" only fields, "Nillable" fields are pointers in the generated struct.
 func (b *int16Builder) Nillable() *int16Builder {
 	b.desc.Nillable = true
 	return b
@@ -621,6 +663,7 @@ func (b *int16Builder) Nillable() *int16Builder {
 
 // Comment sets the comment of the field.
 func (b *int16Builder) Comment(c string) *int16Builder {
+	b.desc.Comment = c
 	return b
 }
 
@@ -687,13 +730,16 @@ func (b *int16Builder) GoType(typ interface{}) *int16Builder {
 //			Ordered: true,
 //		})
 //
-func (b *int16Builder) Annotations(annotations ...Annotation) *int16Builder {
+func (b *int16Builder) Annotations(annotations ...schema.Annotation) *int16Builder {
 	b.desc.Annotations = append(b.desc.Annotations, annotations...)
 	return b
 }
 
 // Descriptor implements the ent.Field interface by returning its descriptor.
 func (b *int16Builder) Descriptor() *Descriptor {
+	if b.desc.Default != nil {
+		b.desc.checkDefaultFunc(int16Type)
+	}
 	return b.desc
 }
 
@@ -762,8 +808,15 @@ func (b *int32Builder) Default(i int32) *int32Builder {
 	return b
 }
 
+// DefaultFunc sets the function that is applied to set the default value
+// of the field on creation.
+func (b *int32Builder) DefaultFunc(fn interface{}) *int32Builder {
+	b.desc.Default = fn
+	return b
+}
+
 // Nillable indicates that this field is a nillable.
-// Unlike "Optional" only fields, "Nillable" fields are pointers in the generated field.
+// Unlike "Optional" only fields, "Nillable" fields are pointers in the generated struct.
 func (b *int32Builder) Nillable() *int32Builder {
 	b.desc.Nillable = true
 	return b
@@ -771,6 +824,7 @@ func (b *int32Builder) Nillable() *int32Builder {
 
 // Comment sets the comment of the field.
 func (b *int32Builder) Comment(c string) *int32Builder {
+	b.desc.Comment = c
 	return b
 }
 
@@ -837,13 +891,16 @@ func (b *int32Builder) GoType(typ interface{}) *int32Builder {
 //			Ordered: true,
 //		})
 //
-func (b *int32Builder) Annotations(annotations ...Annotation) *int32Builder {
+func (b *int32Builder) Annotations(annotations ...schema.Annotation) *int32Builder {
 	b.desc.Annotations = append(b.desc.Annotations, annotations...)
 	return b
 }
 
 // Descriptor implements the ent.Field interface by returning its descriptor.
 func (b *int32Builder) Descriptor() *Descriptor {
+	if b.desc.Default != nil {
+		b.desc.checkDefaultFunc(int32Type)
+	}
 	return b.desc
 }
 
@@ -912,8 +969,15 @@ func (b *int64Builder) Default(i int64) *int64Builder {
 	return b
 }
 
+// DefaultFunc sets the function that is applied to set the default value
+// of the field on creation.
+func (b *int64Builder) DefaultFunc(fn interface{}) *int64Builder {
+	b.desc.Default = fn
+	return b
+}
+
 // Nillable indicates that this field is a nillable.
-// Unlike "Optional" only fields, "Nillable" fields are pointers in the generated field.
+// Unlike "Optional" only fields, "Nillable" fields are pointers in the generated struct.
 func (b *int64Builder) Nillable() *int64Builder {
 	b.desc.Nillable = true
 	return b
@@ -921,6 +985,7 @@ func (b *int64Builder) Nillable() *int64Builder {
 
 // Comment sets the comment of the field.
 func (b *int64Builder) Comment(c string) *int64Builder {
+	b.desc.Comment = c
 	return b
 }
 
@@ -987,13 +1052,16 @@ func (b *int64Builder) GoType(typ interface{}) *int64Builder {
 //			Ordered: true,
 //		})
 //
-func (b *int64Builder) Annotations(annotations ...Annotation) *int64Builder {
+func (b *int64Builder) Annotations(annotations ...schema.Annotation) *int64Builder {
 	b.desc.Annotations = append(b.desc.Annotations, annotations...)
 	return b
 }
 
 // Descriptor implements the ent.Field interface by returning its descriptor.
 func (b *int64Builder) Descriptor() *Descriptor {
+	if b.desc.Default != nil {
+		b.desc.checkDefaultFunc(int64Type)
+	}
 	return b.desc
 }
 
@@ -1052,8 +1120,15 @@ func (b *uint8Builder) Default(i uint8) *uint8Builder {
 	return b
 }
 
+// DefaultFunc sets the function that is applied to set the default value
+// of the field on creation.
+func (b *uint8Builder) DefaultFunc(fn interface{}) *uint8Builder {
+	b.desc.Default = fn
+	return b
+}
+
 // Nillable indicates that this field is a nillable.
-// Unlike "Optional" only fields, "Nillable" fields are pointers in the generated field.
+// Unlike "Optional" only fields, "Nillable" fields are pointers in the generated struct.
 func (b *uint8Builder) Nillable() *uint8Builder {
 	b.desc.Nillable = true
 	return b
@@ -1061,6 +1136,7 @@ func (b *uint8Builder) Nillable() *uint8Builder {
 
 // Comment sets the comment of the field.
 func (b *uint8Builder) Comment(c string) *uint8Builder {
+	b.desc.Comment = c
 	return b
 }
 
@@ -1127,13 +1203,16 @@ func (b *uint8Builder) GoType(typ interface{}) *uint8Builder {
 //			Ordered: true,
 //		})
 //
-func (b *uint8Builder) Annotations(annotations ...Annotation) *uint8Builder {
+func (b *uint8Builder) Annotations(annotations ...schema.Annotation) *uint8Builder {
 	b.desc.Annotations = append(b.desc.Annotations, annotations...)
 	return b
 }
 
 // Descriptor implements the ent.Field interface by returning its descriptor.
 func (b *uint8Builder) Descriptor() *Descriptor {
+	if b.desc.Default != nil {
+		b.desc.checkDefaultFunc(uint8Type)
+	}
 	return b.desc
 }
 
@@ -1192,8 +1271,15 @@ func (b *uint16Builder) Default(i uint16) *uint16Builder {
 	return b
 }
 
+// DefaultFunc sets the function that is applied to set the default value
+// of the field on creation.
+func (b *uint16Builder) DefaultFunc(fn interface{}) *uint16Builder {
+	b.desc.Default = fn
+	return b
+}
+
 // Nillable indicates that this field is a nillable.
-// Unlike "Optional" only fields, "Nillable" fields are pointers in the generated field.
+// Unlike "Optional" only fields, "Nillable" fields are pointers in the generated struct.
 func (b *uint16Builder) Nillable() *uint16Builder {
 	b.desc.Nillable = true
 	return b
@@ -1201,6 +1287,7 @@ func (b *uint16Builder) Nillable() *uint16Builder {
 
 // Comment sets the comment of the field.
 func (b *uint16Builder) Comment(c string) *uint16Builder {
+	b.desc.Comment = c
 	return b
 }
 
@@ -1267,13 +1354,16 @@ func (b *uint16Builder) GoType(typ interface{}) *uint16Builder {
 //			Ordered: true,
 //		})
 //
-func (b *uint16Builder) Annotations(annotations ...Annotation) *uint16Builder {
+func (b *uint16Builder) Annotations(annotations ...schema.Annotation) *uint16Builder {
 	b.desc.Annotations = append(b.desc.Annotations, annotations...)
 	return b
 }
 
 // Descriptor implements the ent.Field interface by returning its descriptor.
 func (b *uint16Builder) Descriptor() *Descriptor {
+	if b.desc.Default != nil {
+		b.desc.checkDefaultFunc(uint16Type)
+	}
 	return b.desc
 }
 
@@ -1332,8 +1422,15 @@ func (b *uint32Builder) Default(i uint32) *uint32Builder {
 	return b
 }
 
+// DefaultFunc sets the function that is applied to set the default value
+// of the field on creation.
+func (b *uint32Builder) DefaultFunc(fn interface{}) *uint32Builder {
+	b.desc.Default = fn
+	return b
+}
+
 // Nillable indicates that this field is a nillable.
-// Unlike "Optional" only fields, "Nillable" fields are pointers in the generated field.
+// Unlike "Optional" only fields, "Nillable" fields are pointers in the generated struct.
 func (b *uint32Builder) Nillable() *uint32Builder {
 	b.desc.Nillable = true
 	return b
@@ -1341,6 +1438,7 @@ func (b *uint32Builder) Nillable() *uint32Builder {
 
 // Comment sets the comment of the field.
 func (b *uint32Builder) Comment(c string) *uint32Builder {
+	b.desc.Comment = c
 	return b
 }
 
@@ -1407,13 +1505,16 @@ func (b *uint32Builder) GoType(typ interface{}) *uint32Builder {
 //			Ordered: true,
 //		})
 //
-func (b *uint32Builder) Annotations(annotations ...Annotation) *uint32Builder {
+func (b *uint32Builder) Annotations(annotations ...schema.Annotation) *uint32Builder {
 	b.desc.Annotations = append(b.desc.Annotations, annotations...)
 	return b
 }
 
 // Descriptor implements the ent.Field interface by returning its descriptor.
 func (b *uint32Builder) Descriptor() *Descriptor {
+	if b.desc.Default != nil {
+		b.desc.checkDefaultFunc(uint32Type)
+	}
 	return b.desc
 }
 
@@ -1472,8 +1573,15 @@ func (b *uint64Builder) Default(i uint64) *uint64Builder {
 	return b
 }
 
+// DefaultFunc sets the function that is applied to set the default value
+// of the field on creation.
+func (b *uint64Builder) DefaultFunc(fn interface{}) *uint64Builder {
+	b.desc.Default = fn
+	return b
+}
+
 // Nillable indicates that this field is a nillable.
-// Unlike "Optional" only fields, "Nillable" fields are pointers in the generated field.
+// Unlike "Optional" only fields, "Nillable" fields are pointers in the generated struct.
 func (b *uint64Builder) Nillable() *uint64Builder {
 	b.desc.Nillable = true
 	return b
@@ -1481,6 +1589,7 @@ func (b *uint64Builder) Nillable() *uint64Builder {
 
 // Comment sets the comment of the field.
 func (b *uint64Builder) Comment(c string) *uint64Builder {
+	b.desc.Comment = c
 	return b
 }
 
@@ -1547,13 +1656,16 @@ func (b *uint64Builder) GoType(typ interface{}) *uint64Builder {
 //			Ordered: true,
 //		})
 //
-func (b *uint64Builder) Annotations(annotations ...Annotation) *uint64Builder {
+func (b *uint64Builder) Annotations(annotations ...schema.Annotation) *uint64Builder {
 	b.desc.Annotations = append(b.desc.Annotations, annotations...)
 	return b
 }
 
 // Descriptor implements the ent.Field interface by returning its descriptor.
 func (b *uint64Builder) Descriptor() *Descriptor {
+	if b.desc.Default != nil {
+		b.desc.checkDefaultFunc(uint64Type)
+	}
 	return b.desc
 }
 
@@ -1631,7 +1743,7 @@ func (b *float64Builder) Default(i float64) *float64Builder {
 }
 
 // Nillable indicates that this field is a nillable.
-// Unlike "Optional" only fields, "Nillable" fields are pointers in the generated field.
+// Unlike "Optional" only fields, "Nillable" fields are pointers in the generated struct.
 func (b *float64Builder) Nillable() *float64Builder {
 	b.desc.Nillable = true
 	return b
@@ -1639,6 +1751,7 @@ func (b *float64Builder) Nillable() *float64Builder {
 
 // Comment sets the comment of the field.
 func (b *float64Builder) Comment(c string) *float64Builder {
+	b.desc.Comment = c
 	return b
 }
 
@@ -1706,7 +1819,7 @@ func (b *float64Builder) GoType(typ interface{}) *float64Builder {
 //			Ordered: true,
 //		})
 //
-func (b *float64Builder) Annotations(annotations ...Annotation) *float64Builder {
+func (b *float64Builder) Annotations(annotations ...schema.Annotation) *float64Builder {
 	b.desc.Annotations = append(b.desc.Annotations, annotations...)
 	return b
 }
@@ -1777,7 +1890,7 @@ func (b *float32Builder) Default(i float32) *float32Builder {
 }
 
 // Nillable indicates that this field is a nillable.
-// Unlike "Optional" only fields, "Nillable" fields are pointers in the generated field.
+// Unlike "Optional" only fields, "Nillable" fields are pointers in the generated struct.
 func (b *float32Builder) Nillable() *float32Builder {
 	b.desc.Nillable = true
 	return b
@@ -1785,6 +1898,7 @@ func (b *float32Builder) Nillable() *float32Builder {
 
 // Comment sets the comment of the field.
 func (b *float32Builder) Comment(c string) *float32Builder {
+	b.desc.Comment = c
 	return b
 }
 
@@ -1852,7 +1966,7 @@ func (b *float32Builder) GoType(typ interface{}) *float32Builder {
 //			Ordered: true,
 //		})
 //
-func (b *float32Builder) Annotations(annotations ...Annotation) *float32Builder {
+func (b *float32Builder) Annotations(annotations ...schema.Annotation) *float32Builder {
 	b.desc.Annotations = append(b.desc.Annotations, annotations...)
 	return b
 }

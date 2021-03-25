@@ -10,24 +10,23 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/facebook/ent/dialect/sql"
-	"github.com/facebook/ent/dialect/sql/sqlgraph"
-	"github.com/facebook/ent/entc/integration/ent/predicate"
-	"github.com/facebook/ent/entc/integration/ent/user"
-	"github.com/facebook/ent/schema/field"
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/entc/integration/ent/predicate"
+	"entgo.io/ent/entc/integration/ent/user"
+	"entgo.io/ent/schema/field"
 )
 
 // UserDelete is the builder for deleting a User entity.
 type UserDelete struct {
 	config
-	hooks      []Hook
-	mutation   *UserMutation
-	predicates []predicate.User
+	hooks    []Hook
+	mutation *UserMutation
 }
 
-// Where adds a new predicate to the delete builder.
+// Where adds a new predicate to the UserDelete builder.
 func (ud *UserDelete) Where(ps ...predicate.User) *UserDelete {
-	ud.predicates = append(ud.predicates, ps...)
+	ud.mutation.predicates = append(ud.mutation.predicates, ps...)
 	return ud
 }
 
@@ -79,7 +78,7 @@ func (ud *UserDelete) sqlExec(ctx context.Context) (int, error) {
 			},
 		},
 	}
-	if ps := ud.predicates; len(ps) > 0 {
+	if ps := ud.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)

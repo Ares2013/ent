@@ -10,25 +10,24 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/facebook/ent/dialect/gremlin"
-	"github.com/facebook/ent/dialect/gremlin/graph/dsl"
-	"github.com/facebook/ent/dialect/gremlin/graph/dsl/__"
-	"github.com/facebook/ent/dialect/gremlin/graph/dsl/g"
-	"github.com/facebook/ent/entc/integration/gremlin/ent/predicate"
-	"github.com/facebook/ent/entc/integration/gremlin/ent/user"
+	"entgo.io/ent/dialect/gremlin"
+	"entgo.io/ent/dialect/gremlin/graph/dsl"
+	"entgo.io/ent/dialect/gremlin/graph/dsl/__"
+	"entgo.io/ent/dialect/gremlin/graph/dsl/g"
+	"entgo.io/ent/entc/integration/gremlin/ent/predicate"
+	"entgo.io/ent/entc/integration/gremlin/ent/user"
 )
 
 // UserDelete is the builder for deleting a User entity.
 type UserDelete struct {
 	config
-	hooks      []Hook
-	mutation   *UserMutation
-	predicates []predicate.User
+	hooks    []Hook
+	mutation *UserMutation
 }
 
-// Where adds a new predicate to the delete builder.
+// Where adds a new predicate to the UserDelete builder.
 func (ud *UserDelete) Where(ps ...predicate.User) *UserDelete {
-	ud.predicates = append(ud.predicates, ps...)
+	ud.mutation.predicates = append(ud.mutation.predicates, ps...)
 	return ud
 }
 
@@ -81,7 +80,7 @@ func (ud *UserDelete) gremlinExec(ctx context.Context) (int, error) {
 
 func (ud *UserDelete) gremlin() *dsl.Traversal {
 	t := g.V().HasLabel(user.Label)
-	for _, p := range ud.predicates {
+	for _, p := range ud.mutation.predicates {
 		p(t)
 	}
 	return t.SideEffect(__.Drop()).Count()

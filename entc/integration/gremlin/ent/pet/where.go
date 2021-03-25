@@ -7,13 +7,14 @@
 package pet
 
 import (
-	"github.com/facebook/ent/dialect/gremlin/graph/dsl"
-	"github.com/facebook/ent/dialect/gremlin/graph/dsl/__"
-	"github.com/facebook/ent/dialect/gremlin/graph/dsl/p"
-	"github.com/facebook/ent/entc/integration/gremlin/ent/predicate"
+	"entgo.io/ent/dialect/gremlin/graph/dsl"
+	"entgo.io/ent/dialect/gremlin/graph/dsl/__"
+	"entgo.io/ent/dialect/gremlin/graph/dsl/p"
+	"entgo.io/ent/entc/integration/gremlin/ent/predicate"
+	"github.com/google/uuid"
 )
 
-// ID filters vertices based on their identifier.
+// ID filters vertices based on their ID field.
 func ID(id string) predicate.Pet {
 	return predicate.Pet(func(t *dsl.Traversal) {
 		t.HasID(id)
@@ -88,6 +89,13 @@ func IDLTE(id string) predicate.Pet {
 func Name(v string) predicate.Pet {
 	return predicate.Pet(func(t *dsl.Traversal) {
 		t.Has(Label, FieldName, p.EQ(v))
+	})
+}
+
+// UUID applies equality check predicate on the "uuid" field. It's identical to UUIDEQ.
+func UUID(v uuid.UUID) predicate.Pet {
+	return predicate.Pet(func(t *dsl.Traversal) {
+		t.Has(Label, FieldUUID, p.EQ(v))
 	})
 }
 
@@ -176,6 +184,84 @@ func NameHasSuffix(v string) predicate.Pet {
 	})
 }
 
+// UUIDEQ applies the EQ predicate on the "uuid" field.
+func UUIDEQ(v uuid.UUID) predicate.Pet {
+	return predicate.Pet(func(t *dsl.Traversal) {
+		t.Has(Label, FieldUUID, p.EQ(v))
+	})
+}
+
+// UUIDNEQ applies the NEQ predicate on the "uuid" field.
+func UUIDNEQ(v uuid.UUID) predicate.Pet {
+	return predicate.Pet(func(t *dsl.Traversal) {
+		t.Has(Label, FieldUUID, p.NEQ(v))
+	})
+}
+
+// UUIDIn applies the In predicate on the "uuid" field.
+func UUIDIn(vs ...uuid.UUID) predicate.Pet {
+	v := make([]interface{}, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.Pet(func(t *dsl.Traversal) {
+		t.Has(Label, FieldUUID, p.Within(v...))
+	})
+}
+
+// UUIDNotIn applies the NotIn predicate on the "uuid" field.
+func UUIDNotIn(vs ...uuid.UUID) predicate.Pet {
+	v := make([]interface{}, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.Pet(func(t *dsl.Traversal) {
+		t.Has(Label, FieldUUID, p.Without(v...))
+	})
+}
+
+// UUIDGT applies the GT predicate on the "uuid" field.
+func UUIDGT(v uuid.UUID) predicate.Pet {
+	return predicate.Pet(func(t *dsl.Traversal) {
+		t.Has(Label, FieldUUID, p.GT(v))
+	})
+}
+
+// UUIDGTE applies the GTE predicate on the "uuid" field.
+func UUIDGTE(v uuid.UUID) predicate.Pet {
+	return predicate.Pet(func(t *dsl.Traversal) {
+		t.Has(Label, FieldUUID, p.GTE(v))
+	})
+}
+
+// UUIDLT applies the LT predicate on the "uuid" field.
+func UUIDLT(v uuid.UUID) predicate.Pet {
+	return predicate.Pet(func(t *dsl.Traversal) {
+		t.Has(Label, FieldUUID, p.LT(v))
+	})
+}
+
+// UUIDLTE applies the LTE predicate on the "uuid" field.
+func UUIDLTE(v uuid.UUID) predicate.Pet {
+	return predicate.Pet(func(t *dsl.Traversal) {
+		t.Has(Label, FieldUUID, p.LTE(v))
+	})
+}
+
+// UUIDIsNil applies the IsNil predicate on the "uuid" field.
+func UUIDIsNil() predicate.Pet {
+	return predicate.Pet(func(t *dsl.Traversal) {
+		t.HasLabel(Label).HasNot(FieldUUID)
+	})
+}
+
+// UUIDNotNil applies the NotNil predicate on the "uuid" field.
+func UUIDNotNil() predicate.Pet {
+	return predicate.Pet(func(t *dsl.Traversal) {
+		t.HasLabel(Label).Has(FieldUUID)
+	})
+}
+
 // HasTeam applies the HasEdge predicate on the "team" edge.
 func HasTeam() predicate.Pet {
 	return predicate.Pet(func(t *dsl.Traversal) {
@@ -212,7 +298,7 @@ func HasOwnerWith(preds ...predicate.User) predicate.Pet {
 	})
 }
 
-// And groups list of predicates with the AND operator between them.
+// And groups predicates with the AND operator between them.
 func And(predicates ...predicate.Pet) predicate.Pet {
 	return predicate.Pet(func(tr *dsl.Traversal) {
 		trs := make([]interface{}, 0, len(predicates))
@@ -225,7 +311,7 @@ func And(predicates ...predicate.Pet) predicate.Pet {
 	})
 }
 
-// Or groups list of predicates with the OR operator between them.
+// Or groups predicates with the OR operator between them.
 func Or(predicates ...predicate.Pet) predicate.Pet {
 	return predicate.Pet(func(tr *dsl.Traversal) {
 		trs := make([]interface{}, 0, len(predicates))

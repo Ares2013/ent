@@ -11,8 +11,7 @@ aliases:
       path: ~/test-results
 
 orbs:
-  aws-cli: circleci/aws-cli@1.0.0
-  go: circleci/go@1.1.1
+  go: circleci/go@1.5.0
 
 commands:
   getmods:
@@ -30,12 +29,12 @@ jobs:
       - *mktestdir
       - run:
           name: Run linters
-          command: golangci-lint run --out-format junit-xml > ~/test-results/lint.xml
+          command: golangci-lint run --timeout 5m --out-format junit-xml > ~/test-results/lint.xml
       - *storetestdir
   unit:
     executor:
       name: go/default
-      tag: '1.15'
+      tag: '1.16'
     steps:
     - checkout
     - *mktestdir
@@ -60,7 +59,7 @@ jobs:
 
   integration:
     docker: &integration-docker
-      - image: circleci/golang
+      - image: circleci/golang:1.16
       - image: circleci/mysql:5.6.35
         environment: &mysql_env
           MYSQL_DATABASE: test
@@ -73,6 +72,15 @@ jobs:
         environment:
           <<: *mysql_env
           MYSQL_TCP_PORT: 3308
+      - image: circleci/mariadb
+        environment:
+          <<: *mysql_env
+          MYSQL_TCP_PORT: 4306
+      - image: docker.io/bitnami/mariadb:10.2-debian-10
+        environment:
+          MARIADB_DATABASE: test
+          MARIADB_ROOT_PASSWORD: pass
+          MARIADB_PORT_NUMBER: 4307
       - image: circleci/postgres:10.0
         environment:
           POSTGRES_DB: test
@@ -88,6 +96,11 @@ jobs:
           POSTGRES_DB: test
           POSTGRES_PASSWORD: pass
         command: -p 5433
+      - image: circleci/postgres:13.1
+        environment:
+          POSTGRES_DB: test
+          POSTGRES_PASSWORD: pass
+        command: -p 5434
       - image: entgo/gremlin-server
         entrypoint: /opt/gremlin-server/bin/gremlin-server.sh
         command: conf/gremlin-server.yaml
@@ -100,6 +113,8 @@ jobs:
             -wait tcp://localhost:3306
             -wait tcp://localhost:3307
             -wait tcp://localhost:3308
+            -wait tcp://localhost:4306
+            -wait tcp://localhost:4307
             -wait tcp://localhost:5430
             -wait tcp://localhost:5431
             -wait tcp://localhost:5433
@@ -138,7 +153,7 @@ jobs:
       - run:
           name: Run integration tests
           working_directory: entc/integration
-          command: gotestsum -f short-verbose --junitfile ~/test-results/integration.xml -- -race -count=2 ./...
+          command: gotestsum -f short-verbose --junitfile ~/test-results/integration.xml -- -race -count=2 -tags='json1' ./...
       - *storetestdir
 
   migration:
@@ -164,35 +179,6 @@ jobs:
           command: gotestsum -f short-verbose --junitfile ~/test-results/pr-integration.xml -- -race -count=2 .
       - *storetestdir
 
-  docs:
-    docker:
-    - image: circleci/node
-    steps:
-    - checkout
-    - run:
-        name: Checking Docs Modified
-        command: |
-          if [[ ! $(git diff master^ --name-only doc/) ]]; then
-            echo "docs not modified; no need to deploy"
-            circleci step halt
-          fi
-    - run:
-        name: Install Dependencies
-        working_directory: ~/project/doc/website
-        command: yarn
-    - run:
-        name: Build Docs
-        working_directory: ~/project/doc/website
-        command: yarn build
-    - aws-cli/setup
-    - run:
-        name: Deploy Docs
-        working_directory: ~/project/doc/website/build/ent
-        command: aws s3 sync . s3://entgo.io --delete --exclude "assets/*"
-    - run:
-        name: Invalidate Cache
-        command: aws cloudfront create-invalidation --distribution-id $CDN_DISTRIBUTION_ID --paths "/*" | jq -M "del(.Location)"
-
 workflows:
   version: 2.1
   all:
@@ -204,7 +190,3 @@ workflows:
         filters:
           branches:
             ignore: master
-    - docs:
-        filters:
-          branches:
-            only: master

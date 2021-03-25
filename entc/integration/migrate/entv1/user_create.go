@@ -11,10 +11,10 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/facebook/ent/dialect/sql/sqlgraph"
-	"github.com/facebook/ent/entc/integration/migrate/entv1/car"
-	"github.com/facebook/ent/entc/integration/migrate/entv1/user"
-	"github.com/facebook/ent/schema/field"
+	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/entc/integration/migrate/entv1/car"
+	"entgo.io/ent/entc/integration/migrate/entv1/user"
+	"entgo.io/ent/schema/field"
 )
 
 // UserCreate is the builder for creating a User entity.
@@ -24,31 +24,31 @@ type UserCreate struct {
 	hooks    []Hook
 }
 
-// SetAge sets the age field.
+// SetAge sets the "age" field.
 func (uc *UserCreate) SetAge(i int32) *UserCreate {
 	uc.mutation.SetAge(i)
 	return uc
 }
 
-// SetName sets the name field.
+// SetName sets the "name" field.
 func (uc *UserCreate) SetName(s string) *UserCreate {
 	uc.mutation.SetName(s)
 	return uc
 }
 
-// SetNickname sets the nickname field.
+// SetNickname sets the "nickname" field.
 func (uc *UserCreate) SetNickname(s string) *UserCreate {
 	uc.mutation.SetNickname(s)
 	return uc
 }
 
-// SetAddress sets the address field.
+// SetAddress sets the "address" field.
 func (uc *UserCreate) SetAddress(s string) *UserCreate {
 	uc.mutation.SetAddress(s)
 	return uc
 }
 
-// SetNillableAddress sets the address field if the given value is not nil.
+// SetNillableAddress sets the "address" field if the given value is not nil.
 func (uc *UserCreate) SetNillableAddress(s *string) *UserCreate {
 	if s != nil {
 		uc.SetAddress(*s)
@@ -56,13 +56,13 @@ func (uc *UserCreate) SetNillableAddress(s *string) *UserCreate {
 	return uc
 }
 
-// SetRenamed sets the renamed field.
+// SetRenamed sets the "renamed" field.
 func (uc *UserCreate) SetRenamed(s string) *UserCreate {
 	uc.mutation.SetRenamed(s)
 	return uc
 }
 
-// SetNillableRenamed sets the renamed field if the given value is not nil.
+// SetNillableRenamed sets the "renamed" field if the given value is not nil.
 func (uc *UserCreate) SetNillableRenamed(s *string) *UserCreate {
 	if s != nil {
 		uc.SetRenamed(*s)
@@ -70,19 +70,19 @@ func (uc *UserCreate) SetNillableRenamed(s *string) *UserCreate {
 	return uc
 }
 
-// SetBlob sets the blob field.
+// SetBlob sets the "blob" field.
 func (uc *UserCreate) SetBlob(b []byte) *UserCreate {
 	uc.mutation.SetBlob(b)
 	return uc
 }
 
-// SetState sets the state field.
+// SetState sets the "state" field.
 func (uc *UserCreate) SetState(u user.State) *UserCreate {
 	uc.mutation.SetState(u)
 	return uc
 }
 
-// SetNillableState sets the state field if the given value is not nil.
+// SetNillableState sets the "state" field if the given value is not nil.
 func (uc *UserCreate) SetNillableState(u *user.State) *UserCreate {
 	if u != nil {
 		uc.SetState(*u)
@@ -90,13 +90,13 @@ func (uc *UserCreate) SetNillableState(u *user.State) *UserCreate {
 	return uc
 }
 
-// SetStatus sets the status field.
+// SetStatus sets the "status" field.
 func (uc *UserCreate) SetStatus(s string) *UserCreate {
 	uc.mutation.SetStatus(s)
 	return uc
 }
 
-// SetNillableStatus sets the status field if the given value is not nil.
+// SetNillableStatus sets the "status" field if the given value is not nil.
 func (uc *UserCreate) SetNillableStatus(s *string) *UserCreate {
 	if s != nil {
 		uc.SetStatus(*s)
@@ -104,19 +104,33 @@ func (uc *UserCreate) SetNillableStatus(s *string) *UserCreate {
 	return uc
 }
 
-// SetID sets the id field.
+// SetWorkplace sets the "workplace" field.
+func (uc *UserCreate) SetWorkplace(s string) *UserCreate {
+	uc.mutation.SetWorkplace(s)
+	return uc
+}
+
+// SetNillableWorkplace sets the "workplace" field if the given value is not nil.
+func (uc *UserCreate) SetNillableWorkplace(s *string) *UserCreate {
+	if s != nil {
+		uc.SetWorkplace(*s)
+	}
+	return uc
+}
+
+// SetID sets the "id" field.
 func (uc *UserCreate) SetID(i int) *UserCreate {
 	uc.mutation.SetID(i)
 	return uc
 }
 
-// SetParentID sets the parent edge to User by id.
+// SetParentID sets the "parent" edge to the User entity by ID.
 func (uc *UserCreate) SetParentID(id int) *UserCreate {
 	uc.mutation.SetParentID(id)
 	return uc
 }
 
-// SetNillableParentID sets the parent edge to User by id if the given value is not nil.
+// SetNillableParentID sets the "parent" edge to the User entity by ID if the given value is not nil.
 func (uc *UserCreate) SetNillableParentID(id *int) *UserCreate {
 	if id != nil {
 		uc = uc.SetParentID(*id)
@@ -124,18 +138,18 @@ func (uc *UserCreate) SetNillableParentID(id *int) *UserCreate {
 	return uc
 }
 
-// SetParent sets the parent edge to User.
+// SetParent sets the "parent" edge to the User entity.
 func (uc *UserCreate) SetParent(u *User) *UserCreate {
 	return uc.SetParentID(u.ID)
 }
 
-// AddChildIDs adds the children edge to User by ids.
+// AddChildIDs adds the "children" edge to the User entity by IDs.
 func (uc *UserCreate) AddChildIDs(ids ...int) *UserCreate {
 	uc.mutation.AddChildIDs(ids...)
 	return uc
 }
 
-// AddChildren adds the children edges to User.
+// AddChildren adds the "children" edges to the User entity.
 func (uc *UserCreate) AddChildren(u ...*User) *UserCreate {
 	ids := make([]int, len(u))
 	for i := range u {
@@ -144,13 +158,13 @@ func (uc *UserCreate) AddChildren(u ...*User) *UserCreate {
 	return uc.AddChildIDs(ids...)
 }
 
-// SetSpouseID sets the spouse edge to User by id.
+// SetSpouseID sets the "spouse" edge to the User entity by ID.
 func (uc *UserCreate) SetSpouseID(id int) *UserCreate {
 	uc.mutation.SetSpouseID(id)
 	return uc
 }
 
-// SetNillableSpouseID sets the spouse edge to User by id if the given value is not nil.
+// SetNillableSpouseID sets the "spouse" edge to the User entity by ID if the given value is not nil.
 func (uc *UserCreate) SetNillableSpouseID(id *int) *UserCreate {
 	if id != nil {
 		uc = uc.SetSpouseID(*id)
@@ -158,18 +172,18 @@ func (uc *UserCreate) SetNillableSpouseID(id *int) *UserCreate {
 	return uc
 }
 
-// SetSpouse sets the spouse edge to User.
+// SetSpouse sets the "spouse" edge to the User entity.
 func (uc *UserCreate) SetSpouse(u *User) *UserCreate {
 	return uc.SetSpouseID(u.ID)
 }
 
-// SetCarID sets the car edge to Car by id.
+// SetCarID sets the "car" edge to the Car entity by ID.
 func (uc *UserCreate) SetCarID(id int) *UserCreate {
 	uc.mutation.SetCarID(id)
 	return uc
 }
 
-// SetNillableCarID sets the car edge to Car by id if the given value is not nil.
+// SetNillableCarID sets the "car" edge to the Car entity by ID if the given value is not nil.
 func (uc *UserCreate) SetNillableCarID(id *int) *UserCreate {
 	if id != nil {
 		uc = uc.SetCarID(*id)
@@ -177,7 +191,7 @@ func (uc *UserCreate) SetNillableCarID(id *int) *UserCreate {
 	return uc
 }
 
-// SetCar sets the car edge to Car.
+// SetCar sets the "car" edge to the Car entity.
 func (uc *UserCreate) SetCar(c *Car) *UserCreate {
 	return uc.SetCarID(c.ID)
 }
@@ -189,20 +203,23 @@ func (uc *UserCreate) Mutation() *UserMutation {
 
 // Save creates the User in the database.
 func (uc *UserCreate) Save(ctx context.Context) (*User, error) {
-	if err := uc.preSave(); err != nil {
-		return nil, err
-	}
 	var (
 		err  error
 		node *User
 	)
 	if len(uc.hooks) == 0 {
+		if err = uc.check(); err != nil {
+			return nil, err
+		}
 		node, err = uc.sqlSave(ctx)
 	} else {
 		var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 			mutation, ok := m.(*UserMutation)
 			if !ok {
 				return nil, fmt.Errorf("unexpected mutation type %T", m)
+			}
+			if err = uc.check(); err != nil {
+				return nil, err
 			}
 			uc.mutation = mutation
 			node, err = uc.sqlSave(ctx)
@@ -228,7 +245,8 @@ func (uc *UserCreate) SaveX(ctx context.Context) *User {
 	return v
 }
 
-func (uc *UserCreate) preSave() error {
+// check runs all checks and user-defined validators on the builder.
+func (uc *UserCreate) check() error {
 	if _, ok := uc.mutation.Age(); !ok {
 		return &ValidationError{Name: "age", err: errors.New("entv1: missing required field \"age\"")}
 	}
@@ -248,27 +266,32 @@ func (uc *UserCreate) preSave() error {
 			return &ValidationError{Name: "state", err: fmt.Errorf("entv1: validator failed for field \"state\": %w", err)}
 		}
 	}
+	if v, ok := uc.mutation.Workplace(); ok {
+		if err := user.WorkplaceValidator(v); err != nil {
+			return &ValidationError{Name: "workplace", err: fmt.Errorf("entv1: validator failed for field \"workplace\": %w", err)}
+		}
+	}
 	return nil
 }
 
 func (uc *UserCreate) sqlSave(ctx context.Context) (*User, error) {
-	u, _spec := uc.createSpec()
+	_node, _spec := uc.createSpec()
 	if err := sqlgraph.CreateNode(ctx, uc.driver, _spec); err != nil {
 		if cerr, ok := isSQLConstraintError(err); ok {
 			err = cerr
 		}
 		return nil, err
 	}
-	if u.ID == 0 {
+	if _node.ID == 0 {
 		id := _spec.ID.Value.(int64)
-		u.ID = int(id)
+		_node.ID = int(id)
 	}
-	return u, nil
+	return _node, nil
 }
 
 func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 	var (
-		u     = &User{config: uc.config}
+		_node = &User{config: uc.config}
 		_spec = &sqlgraph.CreateSpec{
 			Table: user.Table,
 			ID: &sqlgraph.FieldSpec{
@@ -278,7 +301,7 @@ func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 		}
 	)
 	if id, ok := uc.mutation.ID(); ok {
-		u.ID = id
+		_node.ID = id
 		_spec.ID.Value = id
 	}
 	if value, ok := uc.mutation.Age(); ok {
@@ -287,7 +310,7 @@ func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 			Value:  value,
 			Column: user.FieldAge,
 		})
-		u.Age = value
+		_node.Age = value
 	}
 	if value, ok := uc.mutation.Name(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
@@ -295,7 +318,7 @@ func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 			Value:  value,
 			Column: user.FieldName,
 		})
-		u.Name = value
+		_node.Name = value
 	}
 	if value, ok := uc.mutation.Nickname(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
@@ -303,7 +326,7 @@ func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 			Value:  value,
 			Column: user.FieldNickname,
 		})
-		u.Nickname = value
+		_node.Nickname = value
 	}
 	if value, ok := uc.mutation.Address(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
@@ -311,7 +334,7 @@ func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 			Value:  value,
 			Column: user.FieldAddress,
 		})
-		u.Address = value
+		_node.Address = value
 	}
 	if value, ok := uc.mutation.Renamed(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
@@ -319,7 +342,7 @@ func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 			Value:  value,
 			Column: user.FieldRenamed,
 		})
-		u.Renamed = value
+		_node.Renamed = value
 	}
 	if value, ok := uc.mutation.Blob(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
@@ -327,7 +350,7 @@ func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 			Value:  value,
 			Column: user.FieldBlob,
 		})
-		u.Blob = value
+		_node.Blob = value
 	}
 	if value, ok := uc.mutation.State(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
@@ -335,7 +358,7 @@ func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 			Value:  value,
 			Column: user.FieldState,
 		})
-		u.State = value
+		_node.State = value
 	}
 	if value, ok := uc.mutation.Status(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
@@ -343,7 +366,15 @@ func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 			Value:  value,
 			Column: user.FieldStatus,
 		})
-		u.Status = value
+		_node.Status = value
+	}
+	if value, ok := uc.mutation.Workplace(); ok {
+		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: user.FieldWorkplace,
+		})
+		_node.Workplace = value
 	}
 	if nodes := uc.mutation.ParentIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -362,6 +393,7 @@ func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
+		_node.user_children = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := uc.mutation.ChildrenIDs(); len(nodes) > 0 {
@@ -400,6 +432,7 @@ func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
+		_node.user_spouse = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := uc.mutation.CarIDs(); len(nodes) > 0 {
@@ -421,10 +454,10 @@ func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	return u, _spec
+	return _node, _spec
 }
 
-// UserCreateBulk is the builder for creating a bulk of User entities.
+// UserCreateBulk is the builder for creating many User entities in bulk.
 type UserCreateBulk struct {
 	config
 	builders []*UserCreate
@@ -439,12 +472,12 @@ func (ucb *UserCreateBulk) Save(ctx context.Context) ([]*User, error) {
 		func(i int, root context.Context) {
 			builder := ucb.builders[i]
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
-				if err := builder.preSave(); err != nil {
-					return nil, err
-				}
 				mutation, ok := m.(*UserMutation)
 				if !ok {
 					return nil, fmt.Errorf("unexpected mutation type %T", m)
+				}
+				if err := builder.check(); err != nil {
+					return nil, err
 				}
 				builder.mutation = mutation
 				nodes[i], specs[i] = builder.createSpec()
@@ -483,7 +516,7 @@ func (ucb *UserCreateBulk) Save(ctx context.Context) ([]*User, error) {
 	return nodes, nil
 }
 
-// SaveX calls Save and panics if Save returns an error.
+// SaveX is like Save, but panics if an error occurs.
 func (ucb *UserCreateBulk) SaveX(ctx context.Context) []*User {
 	v, err := ucb.Save(ctx)
 	if err != nil {

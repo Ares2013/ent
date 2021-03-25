@@ -8,11 +8,12 @@ package ent
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
-	"github.com/facebook/ent/dialect/sql/sqlgraph"
-	"github.com/facebook/ent/entc/integration/customid/ent/blob"
-	"github.com/facebook/ent/schema/field"
+	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/entc/integration/customid/ent/blob"
+	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
 )
 
@@ -23,25 +24,25 @@ type BlobCreate struct {
 	hooks    []Hook
 }
 
-// SetUUID sets the uuid field.
+// SetUUID sets the "uuid" field.
 func (bc *BlobCreate) SetUUID(u uuid.UUID) *BlobCreate {
 	bc.mutation.SetUUID(u)
 	return bc
 }
 
-// SetID sets the id field.
+// SetID sets the "id" field.
 func (bc *BlobCreate) SetID(u uuid.UUID) *BlobCreate {
 	bc.mutation.SetID(u)
 	return bc
 }
 
-// SetParentID sets the parent edge to Blob by id.
+// SetParentID sets the "parent" edge to the Blob entity by ID.
 func (bc *BlobCreate) SetParentID(id uuid.UUID) *BlobCreate {
 	bc.mutation.SetParentID(id)
 	return bc
 }
 
-// SetNillableParentID sets the parent edge to Blob by id if the given value is not nil.
+// SetNillableParentID sets the "parent" edge to the Blob entity by ID if the given value is not nil.
 func (bc *BlobCreate) SetNillableParentID(id *uuid.UUID) *BlobCreate {
 	if id != nil {
 		bc = bc.SetParentID(*id)
@@ -49,18 +50,18 @@ func (bc *BlobCreate) SetNillableParentID(id *uuid.UUID) *BlobCreate {
 	return bc
 }
 
-// SetParent sets the parent edge to Blob.
+// SetParent sets the "parent" edge to the Blob entity.
 func (bc *BlobCreate) SetParent(b *Blob) *BlobCreate {
 	return bc.SetParentID(b.ID)
 }
 
-// AddLinkIDs adds the links edge to Blob by ids.
+// AddLinkIDs adds the "links" edge to the Blob entity by IDs.
 func (bc *BlobCreate) AddLinkIDs(ids ...uuid.UUID) *BlobCreate {
 	bc.mutation.AddLinkIDs(ids...)
 	return bc
 }
 
-// AddLinks adds the links edges to Blob.
+// AddLinks adds the "links" edges to the Blob entity.
 func (bc *BlobCreate) AddLinks(b ...*Blob) *BlobCreate {
 	ids := make([]uuid.UUID, len(b))
 	for i := range b {
@@ -76,20 +77,24 @@ func (bc *BlobCreate) Mutation() *BlobMutation {
 
 // Save creates the Blob in the database.
 func (bc *BlobCreate) Save(ctx context.Context) (*Blob, error) {
-	if err := bc.preSave(); err != nil {
-		return nil, err
-	}
 	var (
 		err  error
 		node *Blob
 	)
+	bc.defaults()
 	if len(bc.hooks) == 0 {
+		if err = bc.check(); err != nil {
+			return nil, err
+		}
 		node, err = bc.sqlSave(ctx)
 	} else {
 		var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 			mutation, ok := m.(*BlobMutation)
 			if !ok {
 				return nil, fmt.Errorf("unexpected mutation type %T", m)
+			}
+			if err = bc.check(); err != nil {
+				return nil, err
 			}
 			bc.mutation = mutation
 			node, err = bc.sqlSave(ctx)
@@ -115,7 +120,8 @@ func (bc *BlobCreate) SaveX(ctx context.Context) *Blob {
 	return v
 }
 
-func (bc *BlobCreate) preSave() error {
+// defaults sets the default values of the builder before save.
+func (bc *BlobCreate) defaults() {
 	if _, ok := bc.mutation.UUID(); !ok {
 		v := blob.DefaultUUID()
 		bc.mutation.SetUUID(v)
@@ -124,23 +130,30 @@ func (bc *BlobCreate) preSave() error {
 		v := blob.DefaultID()
 		bc.mutation.SetID(v)
 	}
+}
+
+// check runs all checks and user-defined validators on the builder.
+func (bc *BlobCreate) check() error {
+	if _, ok := bc.mutation.UUID(); !ok {
+		return &ValidationError{Name: "uuid", err: errors.New("ent: missing required field \"uuid\"")}
+	}
 	return nil
 }
 
 func (bc *BlobCreate) sqlSave(ctx context.Context) (*Blob, error) {
-	b, _spec := bc.createSpec()
+	_node, _spec := bc.createSpec()
 	if err := sqlgraph.CreateNode(ctx, bc.driver, _spec); err != nil {
 		if cerr, ok := isSQLConstraintError(err); ok {
 			err = cerr
 		}
 		return nil, err
 	}
-	return b, nil
+	return _node, nil
 }
 
 func (bc *BlobCreate) createSpec() (*Blob, *sqlgraph.CreateSpec) {
 	var (
-		b     = &Blob{config: bc.config}
+		_node = &Blob{config: bc.config}
 		_spec = &sqlgraph.CreateSpec{
 			Table: blob.Table,
 			ID: &sqlgraph.FieldSpec{
@@ -150,7 +163,7 @@ func (bc *BlobCreate) createSpec() (*Blob, *sqlgraph.CreateSpec) {
 		}
 	)
 	if id, ok := bc.mutation.ID(); ok {
-		b.ID = id
+		_node.ID = id
 		_spec.ID.Value = id
 	}
 	if value, ok := bc.mutation.UUID(); ok {
@@ -159,7 +172,7 @@ func (bc *BlobCreate) createSpec() (*Blob, *sqlgraph.CreateSpec) {
 			Value:  value,
 			Column: blob.FieldUUID,
 		})
-		b.UUID = value
+		_node.UUID = value
 	}
 	if nodes := bc.mutation.ParentIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -178,6 +191,7 @@ func (bc *BlobCreate) createSpec() (*Blob, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
+		_node.blob_parent = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := bc.mutation.LinksIDs(); len(nodes) > 0 {
@@ -199,10 +213,10 @@ func (bc *BlobCreate) createSpec() (*Blob, *sqlgraph.CreateSpec) {
 		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	return b, _spec
+	return _node, _spec
 }
 
-// BlobCreateBulk is the builder for creating a bulk of Blob entities.
+// BlobCreateBulk is the builder for creating many Blob entities in bulk.
 type BlobCreateBulk struct {
 	config
 	builders []*BlobCreate
@@ -216,13 +230,14 @@ func (bcb *BlobCreateBulk) Save(ctx context.Context) ([]*Blob, error) {
 	for i := range bcb.builders {
 		func(i int, root context.Context) {
 			builder := bcb.builders[i]
+			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
-				if err := builder.preSave(); err != nil {
-					return nil, err
-				}
 				mutation, ok := m.(*BlobMutation)
 				if !ok {
 					return nil, fmt.Errorf("unexpected mutation type %T", m)
+				}
+				if err := builder.check(); err != nil {
+					return nil, err
 				}
 				builder.mutation = mutation
 				nodes[i], specs[i] = builder.createSpec()
@@ -257,7 +272,7 @@ func (bcb *BlobCreateBulk) Save(ctx context.Context) ([]*Blob, error) {
 	return nodes, nil
 }
 
-// SaveX calls Save and panics if Save returns an error.
+// SaveX is like Save, but panics if an error occurs.
 func (bcb *BlobCreateBulk) SaveX(ctx context.Context) []*Blob {
 	v, err := bcb.Save(ctx)
 	if err != nil {

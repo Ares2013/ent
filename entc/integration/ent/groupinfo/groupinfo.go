@@ -15,10 +15,8 @@ const (
 	FieldDesc = "desc"
 	// FieldMaxUsers holds the string denoting the max_users field in the database.
 	FieldMaxUsers = "max_users"
-
 	// EdgeGroups holds the string denoting the groups edge name in mutations.
 	EdgeGroups = "groups"
-
 	// Table holds the table name of the groupinfo in the database.
 	Table = "group_infos"
 	// GroupsTable is the table the holds the groups relation/edge.
@@ -37,8 +35,18 @@ var Columns = []string{
 	FieldMaxUsers,
 }
 
+// ValidColumn reports if the column name is valid (part of the table columns).
+func ValidColumn(column string) bool {
+	for i := range Columns {
+		if column == Columns[i] {
+			return true
+		}
+	}
+	return false
+}
+
 var (
-	// DefaultMaxUsers holds the default value on creation for the max_users field.
+	// DefaultMaxUsers holds the default value on creation for the "max_users" field.
 	DefaultMaxUsers int
 )
 

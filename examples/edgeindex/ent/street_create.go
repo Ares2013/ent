@@ -11,10 +11,10 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/facebook/ent/dialect/sql/sqlgraph"
-	"github.com/facebook/ent/examples/edgeindex/ent/city"
-	"github.com/facebook/ent/examples/edgeindex/ent/street"
-	"github.com/facebook/ent/schema/field"
+	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/examples/edgeindex/ent/city"
+	"entgo.io/ent/examples/edgeindex/ent/street"
+	"entgo.io/ent/schema/field"
 )
 
 // StreetCreate is the builder for creating a Street entity.
@@ -24,19 +24,19 @@ type StreetCreate struct {
 	hooks    []Hook
 }
 
-// SetName sets the name field.
+// SetName sets the "name" field.
 func (sc *StreetCreate) SetName(s string) *StreetCreate {
 	sc.mutation.SetName(s)
 	return sc
 }
 
-// SetCityID sets the city edge to City by id.
+// SetCityID sets the "city" edge to the City entity by ID.
 func (sc *StreetCreate) SetCityID(id int) *StreetCreate {
 	sc.mutation.SetCityID(id)
 	return sc
 }
 
-// SetNillableCityID sets the city edge to City by id if the given value is not nil.
+// SetNillableCityID sets the "city" edge to the City entity by ID if the given value is not nil.
 func (sc *StreetCreate) SetNillableCityID(id *int) *StreetCreate {
 	if id != nil {
 		sc = sc.SetCityID(*id)
@@ -44,7 +44,7 @@ func (sc *StreetCreate) SetNillableCityID(id *int) *StreetCreate {
 	return sc
 }
 
-// SetCity sets the city edge to City.
+// SetCity sets the "city" edge to the City entity.
 func (sc *StreetCreate) SetCity(c *City) *StreetCreate {
 	return sc.SetCityID(c.ID)
 }
@@ -56,20 +56,23 @@ func (sc *StreetCreate) Mutation() *StreetMutation {
 
 // Save creates the Street in the database.
 func (sc *StreetCreate) Save(ctx context.Context) (*Street, error) {
-	if err := sc.preSave(); err != nil {
-		return nil, err
-	}
 	var (
 		err  error
 		node *Street
 	)
 	if len(sc.hooks) == 0 {
+		if err = sc.check(); err != nil {
+			return nil, err
+		}
 		node, err = sc.sqlSave(ctx)
 	} else {
 		var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 			mutation, ok := m.(*StreetMutation)
 			if !ok {
 				return nil, fmt.Errorf("unexpected mutation type %T", m)
+			}
+			if err = sc.check(); err != nil {
+				return nil, err
 			}
 			sc.mutation = mutation
 			node, err = sc.sqlSave(ctx)
@@ -95,7 +98,8 @@ func (sc *StreetCreate) SaveX(ctx context.Context) *Street {
 	return v
 }
 
-func (sc *StreetCreate) preSave() error {
+// check runs all checks and user-defined validators on the builder.
+func (sc *StreetCreate) check() error {
 	if _, ok := sc.mutation.Name(); !ok {
 		return &ValidationError{Name: "name", err: errors.New("ent: missing required field \"name\"")}
 	}
@@ -103,7 +107,7 @@ func (sc *StreetCreate) preSave() error {
 }
 
 func (sc *StreetCreate) sqlSave(ctx context.Context) (*Street, error) {
-	s, _spec := sc.createSpec()
+	_node, _spec := sc.createSpec()
 	if err := sqlgraph.CreateNode(ctx, sc.driver, _spec); err != nil {
 		if cerr, ok := isSQLConstraintError(err); ok {
 			err = cerr
@@ -111,13 +115,13 @@ func (sc *StreetCreate) sqlSave(ctx context.Context) (*Street, error) {
 		return nil, err
 	}
 	id := _spec.ID.Value.(int64)
-	s.ID = int(id)
-	return s, nil
+	_node.ID = int(id)
+	return _node, nil
 }
 
 func (sc *StreetCreate) createSpec() (*Street, *sqlgraph.CreateSpec) {
 	var (
-		s     = &Street{config: sc.config}
+		_node = &Street{config: sc.config}
 		_spec = &sqlgraph.CreateSpec{
 			Table: street.Table,
 			ID: &sqlgraph.FieldSpec{
@@ -132,7 +136,7 @@ func (sc *StreetCreate) createSpec() (*Street, *sqlgraph.CreateSpec) {
 			Value:  value,
 			Column: street.FieldName,
 		})
-		s.Name = value
+		_node.Name = value
 	}
 	if nodes := sc.mutation.CityIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -151,12 +155,13 @@ func (sc *StreetCreate) createSpec() (*Street, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
+		_node.city_streets = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	return s, _spec
+	return _node, _spec
 }
 
-// StreetCreateBulk is the builder for creating a bulk of Street entities.
+// StreetCreateBulk is the builder for creating many Street entities in bulk.
 type StreetCreateBulk struct {
 	config
 	builders []*StreetCreate
@@ -171,12 +176,12 @@ func (scb *StreetCreateBulk) Save(ctx context.Context) ([]*Street, error) {
 		func(i int, root context.Context) {
 			builder := scb.builders[i]
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
-				if err := builder.preSave(); err != nil {
-					return nil, err
-				}
 				mutation, ok := m.(*StreetMutation)
 				if !ok {
 					return nil, fmt.Errorf("unexpected mutation type %T", m)
+				}
+				if err := builder.check(); err != nil {
+					return nil, err
 				}
 				builder.mutation = mutation
 				nodes[i], specs[i] = builder.createSpec()
@@ -213,7 +218,7 @@ func (scb *StreetCreateBulk) Save(ctx context.Context) ([]*Street, error) {
 	return nodes, nil
 }
 
-// SaveX calls Save and panics if Save returns an error.
+// SaveX is like Save, but panics if an error occurs.
 func (scb *StreetCreateBulk) SaveX(ctx context.Context) []*Street {
 	v, err := scb.Save(ctx)
 	if err != nil {

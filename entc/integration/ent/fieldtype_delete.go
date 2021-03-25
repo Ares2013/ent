@@ -10,24 +10,23 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/facebook/ent/dialect/sql"
-	"github.com/facebook/ent/dialect/sql/sqlgraph"
-	"github.com/facebook/ent/entc/integration/ent/fieldtype"
-	"github.com/facebook/ent/entc/integration/ent/predicate"
-	"github.com/facebook/ent/schema/field"
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/entc/integration/ent/fieldtype"
+	"entgo.io/ent/entc/integration/ent/predicate"
+	"entgo.io/ent/schema/field"
 )
 
 // FieldTypeDelete is the builder for deleting a FieldType entity.
 type FieldTypeDelete struct {
 	config
-	hooks      []Hook
-	mutation   *FieldTypeMutation
-	predicates []predicate.FieldType
+	hooks    []Hook
+	mutation *FieldTypeMutation
 }
 
-// Where adds a new predicate to the delete builder.
+// Where adds a new predicate to the FieldTypeDelete builder.
 func (ftd *FieldTypeDelete) Where(ps ...predicate.FieldType) *FieldTypeDelete {
-	ftd.predicates = append(ftd.predicates, ps...)
+	ftd.mutation.predicates = append(ftd.mutation.predicates, ps...)
 	return ftd
 }
 
@@ -79,7 +78,7 @@ func (ftd *FieldTypeDelete) sqlExec(ctx context.Context) (int, error) {
 			},
 		},
 	}
-	if ps := ftd.predicates; len(ps) > 0 {
+	if ps := ftd.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)

@@ -13,14 +13,14 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/facebook/ent/dialect/sql"
-	"github.com/facebook/ent/dialect/sql/sqlgraph"
-	"github.com/facebook/ent/entc/integration/ent/fieldtype"
-	"github.com/facebook/ent/entc/integration/ent/file"
-	"github.com/facebook/ent/entc/integration/ent/filetype"
-	"github.com/facebook/ent/entc/integration/ent/predicate"
-	"github.com/facebook/ent/entc/integration/ent/user"
-	"github.com/facebook/ent/schema/field"
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/entc/integration/ent/fieldtype"
+	"entgo.io/ent/entc/integration/ent/file"
+	"entgo.io/ent/entc/integration/ent/filetype"
+	"entgo.io/ent/entc/integration/ent/predicate"
+	"entgo.io/ent/entc/integration/ent/user"
+	"entgo.io/ent/schema/field"
 )
 
 // FileQuery is the builder for querying File entities.
@@ -28,8 +28,9 @@ type FileQuery struct {
 	config
 	limit      *int
 	offset     *int
+	unique     *bool
 	order      []OrderFunc
-	unique     []string
+	fields     []string
 	predicates []predicate.File
 	// eager-loading edges.
 	withOwner *UserQuery
@@ -41,7 +42,7 @@ type FileQuery struct {
 	path func(context.Context) (*sql.Selector, error)
 }
 
-// Where adds a new predicate for the builder.
+// Where adds a new predicate for the FileQuery builder.
 func (fq *FileQuery) Where(ps ...predicate.File) *FileQuery {
 	fq.predicates = append(fq.predicates, ps...)
 	return fq
@@ -59,21 +60,32 @@ func (fq *FileQuery) Offset(offset int) *FileQuery {
 	return fq
 }
 
+// Unique configures the query builder to filter duplicate records on query.
+// By default, unique is set to true, and can be disabled using this method.
+func (fq *FileQuery) Unique(unique bool) *FileQuery {
+	fq.unique = &unique
+	return fq
+}
+
 // Order adds an order step to the query.
 func (fq *FileQuery) Order(o ...OrderFunc) *FileQuery {
 	fq.order = append(fq.order, o...)
 	return fq
 }
 
-// QueryOwner chains the current query on the owner edge.
+// QueryOwner chains the current query on the "owner" edge.
 func (fq *FileQuery) QueryOwner() *UserQuery {
 	query := &UserQuery{config: fq.config}
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := fq.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
+		selector := fq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
 		step := sqlgraph.NewStep(
-			sqlgraph.From(file.Table, file.FieldID, fq.sqlQuery()),
+			sqlgraph.From(file.Table, file.FieldID, selector),
 			sqlgraph.To(user.Table, user.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, file.OwnerTable, file.OwnerColumn),
 		)
@@ -83,15 +95,19 @@ func (fq *FileQuery) QueryOwner() *UserQuery {
 	return query
 }
 
-// QueryType chains the current query on the type edge.
+// QueryType chains the current query on the "type" edge.
 func (fq *FileQuery) QueryType() *FileTypeQuery {
 	query := &FileTypeQuery{config: fq.config}
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := fq.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
+		selector := fq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
 		step := sqlgraph.NewStep(
-			sqlgraph.From(file.Table, file.FieldID, fq.sqlQuery()),
+			sqlgraph.From(file.Table, file.FieldID, selector),
 			sqlgraph.To(filetype.Table, filetype.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, file.TypeTable, file.TypeColumn),
 		)
@@ -101,15 +117,19 @@ func (fq *FileQuery) QueryType() *FileTypeQuery {
 	return query
 }
 
-// QueryField chains the current query on the field edge.
+// QueryField chains the current query on the "field" edge.
 func (fq *FileQuery) QueryField() *FieldTypeQuery {
 	query := &FieldTypeQuery{config: fq.config}
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := fq.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
+		selector := fq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
 		step := sqlgraph.NewStep(
-			sqlgraph.From(file.Table, file.FieldID, fq.sqlQuery()),
+			sqlgraph.From(file.Table, file.FieldID, selector),
 			sqlgraph.To(fieldtype.Table, fieldtype.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, file.FieldTable, file.FieldColumn),
 		)
@@ -119,28 +139,30 @@ func (fq *FileQuery) QueryField() *FieldTypeQuery {
 	return query
 }
 
-// First returns the first File entity in the query. Returns *NotFoundError when no file was found.
+// First returns the first File entity from the query.
+// Returns a *NotFoundError when no File was found.
 func (fq *FileQuery) First(ctx context.Context) (*File, error) {
-	fs, err := fq.Limit(1).All(ctx)
+	nodes, err := fq.Limit(1).All(ctx)
 	if err != nil {
 		return nil, err
 	}
-	if len(fs) == 0 {
+	if len(nodes) == 0 {
 		return nil, &NotFoundError{file.Label}
 	}
-	return fs[0], nil
+	return nodes[0], nil
 }
 
 // FirstX is like First, but panics if an error occurs.
 func (fq *FileQuery) FirstX(ctx context.Context) *File {
-	f, err := fq.First(ctx)
+	node, err := fq.First(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
 	}
-	return f
+	return node
 }
 
-// FirstID returns the first File id in the query. Returns *NotFoundError when no id was found.
+// FirstID returns the first File ID from the query.
+// Returns a *NotFoundError when no File ID was found.
 func (fq *FileQuery) FirstID(ctx context.Context) (id int, err error) {
 	var ids []int
 	if ids, err = fq.Limit(1).IDs(ctx); err != nil {
@@ -153,8 +175,8 @@ func (fq *FileQuery) FirstID(ctx context.Context) (id int, err error) {
 	return ids[0], nil
 }
 
-// FirstXID is like FirstID, but panics if an error occurs.
-func (fq *FileQuery) FirstXID(ctx context.Context) int {
+// FirstIDX is like FirstID, but panics if an error occurs.
+func (fq *FileQuery) FirstIDX(ctx context.Context) int {
 	id, err := fq.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -162,15 +184,17 @@ func (fq *FileQuery) FirstXID(ctx context.Context) int {
 	return id
 }
 
-// Only returns the only File entity in the query, returns an error if not exactly one entity was returned.
+// Only returns a single File entity found by the query, ensuring it only returns one.
+// Returns a *NotSingularError when exactly one File entity is not found.
+// Returns a *NotFoundError when no File entities are found.
 func (fq *FileQuery) Only(ctx context.Context) (*File, error) {
-	fs, err := fq.Limit(2).All(ctx)
+	nodes, err := fq.Limit(2).All(ctx)
 	if err != nil {
 		return nil, err
 	}
-	switch len(fs) {
+	switch len(nodes) {
 	case 1:
-		return fs[0], nil
+		return nodes[0], nil
 	case 0:
 		return nil, &NotFoundError{file.Label}
 	default:
@@ -180,14 +204,16 @@ func (fq *FileQuery) Only(ctx context.Context) (*File, error) {
 
 // OnlyX is like Only, but panics if an error occurs.
 func (fq *FileQuery) OnlyX(ctx context.Context) *File {
-	f, err := fq.Only(ctx)
+	node, err := fq.Only(ctx)
 	if err != nil {
 		panic(err)
 	}
-	return f
+	return node
 }
 
-// OnlyID returns the only File id in the query, returns an error if not exactly one id was returned.
+// OnlyID is like Only, but returns the only File ID in the query.
+// Returns a *NotSingularError when exactly one File ID is not found.
+// Returns a *NotFoundError when no entities are found.
 func (fq *FileQuery) OnlyID(ctx context.Context) (id int, err error) {
 	var ids []int
 	if ids, err = fq.Limit(2).IDs(ctx); err != nil {
@@ -223,14 +249,14 @@ func (fq *FileQuery) All(ctx context.Context) ([]*File, error) {
 
 // AllX is like All, but panics if an error occurs.
 func (fq *FileQuery) AllX(ctx context.Context) []*File {
-	fs, err := fq.All(ctx)
+	nodes, err := fq.All(ctx)
 	if err != nil {
 		panic(err)
 	}
-	return fs
+	return nodes
 }
 
-// IDs executes the query and returns a list of File ids.
+// IDs executes the query and returns a list of File IDs.
 func (fq *FileQuery) IDs(ctx context.Context) ([]int, error) {
 	var ids []int
 	if err := fq.Select(file.FieldID).Scan(ctx, &ids); err != nil {
@@ -282,24 +308,29 @@ func (fq *FileQuery) ExistX(ctx context.Context) bool {
 	return exist
 }
 
-// Clone returns a duplicate of the query builder, including all associated steps. It can be
+// Clone returns a duplicate of the FileQuery builder, including all associated steps. It can be
 // used to prepare common query builders and use them differently after the clone is made.
 func (fq *FileQuery) Clone() *FileQuery {
+	if fq == nil {
+		return nil
+	}
 	return &FileQuery{
 		config:     fq.config,
 		limit:      fq.limit,
 		offset:     fq.offset,
 		order:      append([]OrderFunc{}, fq.order...),
-		unique:     append([]string{}, fq.unique...),
 		predicates: append([]predicate.File{}, fq.predicates...),
+		withOwner:  fq.withOwner.Clone(),
+		withType:   fq.withType.Clone(),
+		withField:  fq.withField.Clone(),
 		// clone intermediate query.
 		sql:  fq.sql.Clone(),
 		path: fq.path,
 	}
 }
 
-//  WithOwner tells the query-builder to eager-loads the nodes that are connected to
-// the "owner" edge. The optional arguments used to configure the query builder of the edge.
+// WithOwner tells the query-builder to eager-load the nodes that are connected to
+// the "owner" edge. The optional arguments are used to configure the query builder of the edge.
 func (fq *FileQuery) WithOwner(opts ...func(*UserQuery)) *FileQuery {
 	query := &UserQuery{config: fq.config}
 	for _, opt := range opts {
@@ -309,8 +340,8 @@ func (fq *FileQuery) WithOwner(opts ...func(*UserQuery)) *FileQuery {
 	return fq
 }
 
-//  WithType tells the query-builder to eager-loads the nodes that are connected to
-// the "type" edge. The optional arguments used to configure the query builder of the edge.
+// WithType tells the query-builder to eager-load the nodes that are connected to
+// the "type" edge. The optional arguments are used to configure the query builder of the edge.
 func (fq *FileQuery) WithType(opts ...func(*FileTypeQuery)) *FileQuery {
 	query := &FileTypeQuery{config: fq.config}
 	for _, opt := range opts {
@@ -320,8 +351,8 @@ func (fq *FileQuery) WithType(opts ...func(*FileTypeQuery)) *FileQuery {
 	return fq
 }
 
-//  WithField tells the query-builder to eager-loads the nodes that are connected to
-// the "field" edge. The optional arguments used to configure the query builder of the edge.
+// WithField tells the query-builder to eager-load the nodes that are connected to
+// the "field" edge. The optional arguments are used to configure the query builder of the edge.
 func (fq *FileQuery) WithField(opts ...func(*FieldTypeQuery)) *FileQuery {
 	query := &FieldTypeQuery{config: fq.config}
 	for _, opt := range opts {
@@ -331,7 +362,7 @@ func (fq *FileQuery) WithField(opts ...func(*FieldTypeQuery)) *FileQuery {
 	return fq
 }
 
-// GroupBy used to group vertices by one or more fields/columns.
+// GroupBy is used to group vertices by one or more fields/columns.
 // It is often used with aggregate functions, like: count, max, mean, min, sum.
 //
 // Example:
@@ -353,12 +384,13 @@ func (fq *FileQuery) GroupBy(field string, fields ...string) *FileGroupBy {
 		if err := fq.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		return fq.sqlQuery(), nil
+		return fq.sqlQuery(ctx), nil
 	}
 	return group
 }
 
-// Select one or more fields from the given query.
+// Select allows the selection one or more fields/columns for the given query,
+// instead of selecting all fields in the entity.
 //
 // Example:
 //
@@ -371,18 +403,16 @@ func (fq *FileQuery) GroupBy(field string, fields ...string) *FileGroupBy {
 //		Scan(ctx, &v)
 //
 func (fq *FileQuery) Select(field string, fields ...string) *FileSelect {
-	selector := &FileSelect{config: fq.config}
-	selector.fields = append([]string{field}, fields...)
-	selector.path = func(ctx context.Context) (prev *sql.Selector, err error) {
-		if err := fq.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		return fq.sqlQuery(), nil
-	}
-	return selector
+	fq.fields = append([]string{field}, fields...)
+	return &FileSelect{FileQuery: fq}
 }
 
 func (fq *FileQuery) prepareQuery(ctx context.Context) error {
+	for _, f := range fq.fields {
+		if !file.ValidColumn(f) {
+			return &ValidationError{Name: f, err: fmt.Errorf("ent: invalid field %q for query", f)}
+		}
+	}
 	if fq.path != nil {
 		prev, err := fq.path(ctx)
 		if err != nil {
@@ -410,22 +440,18 @@ func (fq *FileQuery) sqlAll(ctx context.Context) ([]*File, error) {
 	if withFKs {
 		_spec.Node.Columns = append(_spec.Node.Columns, file.ForeignKeys...)
 	}
-	_spec.ScanValues = func() []interface{} {
+	_spec.ScanValues = func(columns []string) ([]interface{}, error) {
 		node := &File{config: fq.config}
 		nodes = append(nodes, node)
-		values := node.scanValues()
-		if withFKs {
-			values = append(values, node.fkValues()...)
-		}
-		return values
+		return node.scanValues(columns)
 	}
-	_spec.Assign = func(values ...interface{}) error {
+	_spec.Assign = func(columns []string, values []interface{}) error {
 		if len(nodes) == 0 {
 			return fmt.Errorf("ent: Assign called without calling ScanValues")
 		}
 		node := nodes[len(nodes)-1]
 		node.Edges.loadedTypes = loadedTypes
-		return node.assignValues(values...)
+		return node.assignValues(columns, values)
 	}
 	if err := sqlgraph.QueryNodes(ctx, fq.driver, _spec); err != nil {
 		return nil, err
@@ -438,10 +464,14 @@ func (fq *FileQuery) sqlAll(ctx context.Context) ([]*File, error) {
 		ids := make([]int, 0, len(nodes))
 		nodeids := make(map[int][]*File)
 		for i := range nodes {
-			if fk := nodes[i].user_files; fk != nil {
-				ids = append(ids, *fk)
-				nodeids[*fk] = append(nodeids[*fk], nodes[i])
+			if nodes[i].user_files == nil {
+				continue
 			}
+			fk := *nodes[i].user_files
+			if _, ok := nodeids[fk]; !ok {
+				ids = append(ids, fk)
+			}
+			nodeids[fk] = append(nodeids[fk], nodes[i])
 		}
 		query.Where(user.IDIn(ids...))
 		neighbors, err := query.All(ctx)
@@ -463,10 +493,14 @@ func (fq *FileQuery) sqlAll(ctx context.Context) ([]*File, error) {
 		ids := make([]int, 0, len(nodes))
 		nodeids := make(map[int][]*File)
 		for i := range nodes {
-			if fk := nodes[i].file_type_files; fk != nil {
-				ids = append(ids, *fk)
-				nodeids[*fk] = append(nodeids[*fk], nodes[i])
+			if nodes[i].file_type_files == nil {
+				continue
 			}
+			fk := *nodes[i].file_type_files
+			if _, ok := nodeids[fk]; !ok {
+				ids = append(ids, fk)
+			}
+			nodeids[fk] = append(nodeids[fk], nodes[i])
 		}
 		query.Where(filetype.IDIn(ids...))
 		neighbors, err := query.All(ctx)
@@ -490,6 +524,7 @@ func (fq *FileQuery) sqlAll(ctx context.Context) ([]*File, error) {
 		for i := range nodes {
 			fks = append(fks, nodes[i].ID)
 			nodeids[nodes[i].ID] = nodes[i]
+			nodes[i].Edges.Field = []*FieldType{}
 		}
 		query.withFKs = true
 		query.Where(predicate.FieldType(func(s *sql.Selector) {
@@ -523,7 +558,7 @@ func (fq *FileQuery) sqlCount(ctx context.Context) (int, error) {
 func (fq *FileQuery) sqlExist(ctx context.Context) (bool, error) {
 	n, err := fq.sqlCount(ctx)
 	if err != nil {
-		return false, fmt.Errorf("ent: check existence: %v", err)
+		return false, fmt.Errorf("ent: check existence: %w", err)
 	}
 	return n > 0, nil
 }
@@ -541,6 +576,18 @@ func (fq *FileQuery) querySpec() *sqlgraph.QuerySpec {
 		From:   fq.sql,
 		Unique: true,
 	}
+	if unique := fq.unique; unique != nil {
+		_spec.Unique = *unique
+	}
+	if fields := fq.fields; len(fields) > 0 {
+		_spec.Node.Columns = make([]string, 0, len(fields))
+		_spec.Node.Columns = append(_spec.Node.Columns, file.FieldID)
+		for i := range fields {
+			if fields[i] != file.FieldID {
+				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
+			}
+		}
+	}
 	if ps := fq.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -557,14 +604,14 @@ func (fq *FileQuery) querySpec() *sqlgraph.QuerySpec {
 	if ps := fq.order; len(ps) > 0 {
 		_spec.Order = func(selector *sql.Selector) {
 			for i := range ps {
-				ps[i](selector)
+				ps[i](selector, file.ValidColumn)
 			}
 		}
 	}
 	return _spec
 }
 
-func (fq *FileQuery) sqlQuery() *sql.Selector {
+func (fq *FileQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	builder := sql.Dialect(fq.driver.Dialect())
 	t1 := builder.Table(file.Table)
 	selector := builder.Select(t1.Columns(file.Columns...)...).From(t1)
@@ -576,7 +623,7 @@ func (fq *FileQuery) sqlQuery() *sql.Selector {
 		p(selector)
 	}
 	for _, p := range fq.order {
-		p(selector)
+		p(selector, file.ValidColumn)
 	}
 	if offset := fq.offset; offset != nil {
 		// limit is mandatory for offset clause. We start
@@ -589,7 +636,7 @@ func (fq *FileQuery) sqlQuery() *sql.Selector {
 	return selector
 }
 
-// FileGroupBy is the builder for group-by File entities.
+// FileGroupBy is the group-by builder for File entities.
 type FileGroupBy struct {
 	config
 	fields []string
@@ -605,7 +652,7 @@ func (fgb *FileGroupBy) Aggregate(fns ...AggregateFunc) *FileGroupBy {
 	return fgb
 }
 
-// Scan applies the group-by query and scan the result into the given value.
+// Scan applies the group-by query and scans the result into the given value.
 func (fgb *FileGroupBy) Scan(ctx context.Context, v interface{}) error {
 	query, err := fgb.path(ctx)
 	if err != nil {
@@ -622,7 +669,8 @@ func (fgb *FileGroupBy) ScanX(ctx context.Context, v interface{}) {
 	}
 }
 
-// Strings returns list of strings from group-by. It is only allowed when querying group-by with one field.
+// Strings returns list of strings from group-by.
+// It is only allowed when executing a group-by query with one field.
 func (fgb *FileGroupBy) Strings(ctx context.Context) ([]string, error) {
 	if len(fgb.fields) > 1 {
 		return nil, errors.New("ent: FileGroupBy.Strings is not achievable when grouping more than 1 field")
@@ -643,7 +691,8 @@ func (fgb *FileGroupBy) StringsX(ctx context.Context) []string {
 	return v
 }
 
-// String returns a single string from group-by. It is only allowed when querying group-by with one field.
+// String returns a single string from a group-by query.
+// It is only allowed when executing a group-by query with one field.
 func (fgb *FileGroupBy) String(ctx context.Context) (_ string, err error) {
 	var v []string
 	if v, err = fgb.Strings(ctx); err != nil {
@@ -669,7 +718,8 @@ func (fgb *FileGroupBy) StringX(ctx context.Context) string {
 	return v
 }
 
-// Ints returns list of ints from group-by. It is only allowed when querying group-by with one field.
+// Ints returns list of ints from group-by.
+// It is only allowed when executing a group-by query with one field.
 func (fgb *FileGroupBy) Ints(ctx context.Context) ([]int, error) {
 	if len(fgb.fields) > 1 {
 		return nil, errors.New("ent: FileGroupBy.Ints is not achievable when grouping more than 1 field")
@@ -690,7 +740,8 @@ func (fgb *FileGroupBy) IntsX(ctx context.Context) []int {
 	return v
 }
 
-// Int returns a single int from group-by. It is only allowed when querying group-by with one field.
+// Int returns a single int from a group-by query.
+// It is only allowed when executing a group-by query with one field.
 func (fgb *FileGroupBy) Int(ctx context.Context) (_ int, err error) {
 	var v []int
 	if v, err = fgb.Ints(ctx); err != nil {
@@ -716,7 +767,8 @@ func (fgb *FileGroupBy) IntX(ctx context.Context) int {
 	return v
 }
 
-// Float64s returns list of float64s from group-by. It is only allowed when querying group-by with one field.
+// Float64s returns list of float64s from group-by.
+// It is only allowed when executing a group-by query with one field.
 func (fgb *FileGroupBy) Float64s(ctx context.Context) ([]float64, error) {
 	if len(fgb.fields) > 1 {
 		return nil, errors.New("ent: FileGroupBy.Float64s is not achievable when grouping more than 1 field")
@@ -737,7 +789,8 @@ func (fgb *FileGroupBy) Float64sX(ctx context.Context) []float64 {
 	return v
 }
 
-// Float64 returns a single float64 from group-by. It is only allowed when querying group-by with one field.
+// Float64 returns a single float64 from a group-by query.
+// It is only allowed when executing a group-by query with one field.
 func (fgb *FileGroupBy) Float64(ctx context.Context) (_ float64, err error) {
 	var v []float64
 	if v, err = fgb.Float64s(ctx); err != nil {
@@ -763,7 +816,8 @@ func (fgb *FileGroupBy) Float64X(ctx context.Context) float64 {
 	return v
 }
 
-// Bools returns list of bools from group-by. It is only allowed when querying group-by with one field.
+// Bools returns list of bools from group-by.
+// It is only allowed when executing a group-by query with one field.
 func (fgb *FileGroupBy) Bools(ctx context.Context) ([]bool, error) {
 	if len(fgb.fields) > 1 {
 		return nil, errors.New("ent: FileGroupBy.Bools is not achievable when grouping more than 1 field")
@@ -784,7 +838,8 @@ func (fgb *FileGroupBy) BoolsX(ctx context.Context) []bool {
 	return v
 }
 
-// Bool returns a single bool from group-by. It is only allowed when querying group-by with one field.
+// Bool returns a single bool from a group-by query.
+// It is only allowed when executing a group-by query with one field.
 func (fgb *FileGroupBy) Bool(ctx context.Context) (_ bool, err error) {
 	var v []bool
 	if v, err = fgb.Bools(ctx); err != nil {
@@ -811,8 +866,17 @@ func (fgb *FileGroupBy) BoolX(ctx context.Context) bool {
 }
 
 func (fgb *FileGroupBy) sqlScan(ctx context.Context, v interface{}) error {
+	for _, f := range fgb.fields {
+		if !file.ValidColumn(f) {
+			return &ValidationError{Name: f, err: fmt.Errorf("invalid field %q for group-by", f)}
+		}
+	}
+	selector := fgb.sqlQuery()
+	if err := selector.Err(); err != nil {
+		return err
+	}
 	rows := &sql.Rows{}
-	query, args := fgb.sqlQuery().Query()
+	query, args := selector.Query()
 	if err := fgb.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}
@@ -825,27 +889,24 @@ func (fgb *FileGroupBy) sqlQuery() *sql.Selector {
 	columns := make([]string, 0, len(fgb.fields)+len(fgb.fns))
 	columns = append(columns, fgb.fields...)
 	for _, fn := range fgb.fns {
-		columns = append(columns, fn(selector))
+		columns = append(columns, fn(selector, file.ValidColumn))
 	}
 	return selector.Select(columns...).GroupBy(fgb.fields...)
 }
 
-// FileSelect is the builder for select fields of File entities.
+// FileSelect is the builder for selecting fields of File entities.
 type FileSelect struct {
-	config
-	fields []string
+	*FileQuery
 	// intermediate query (i.e. traversal path).
-	sql  *sql.Selector
-	path func(context.Context) (*sql.Selector, error)
+	sql *sql.Selector
 }
 
-// Scan applies the selector query and scan the result into the given value.
+// Scan applies the selector query and scans the result into the given value.
 func (fs *FileSelect) Scan(ctx context.Context, v interface{}) error {
-	query, err := fs.path(ctx)
-	if err != nil {
+	if err := fs.prepareQuery(ctx); err != nil {
 		return err
 	}
-	fs.sql = query
+	fs.sql = fs.FileQuery.sqlQuery(ctx)
 	return fs.sqlScan(ctx, v)
 }
 
@@ -856,7 +917,7 @@ func (fs *FileSelect) ScanX(ctx context.Context, v interface{}) {
 	}
 }
 
-// Strings returns list of strings from selector. It is only allowed when selecting one field.
+// Strings returns list of strings from a selector. It is only allowed when selecting one field.
 func (fs *FileSelect) Strings(ctx context.Context) ([]string, error) {
 	if len(fs.fields) > 1 {
 		return nil, errors.New("ent: FileSelect.Strings is not achievable when selecting more than 1 field")
@@ -877,7 +938,7 @@ func (fs *FileSelect) StringsX(ctx context.Context) []string {
 	return v
 }
 
-// String returns a single string from selector. It is only allowed when selecting one field.
+// String returns a single string from a selector. It is only allowed when selecting one field.
 func (fs *FileSelect) String(ctx context.Context) (_ string, err error) {
 	var v []string
 	if v, err = fs.Strings(ctx); err != nil {
@@ -903,7 +964,7 @@ func (fs *FileSelect) StringX(ctx context.Context) string {
 	return v
 }
 
-// Ints returns list of ints from selector. It is only allowed when selecting one field.
+// Ints returns list of ints from a selector. It is only allowed when selecting one field.
 func (fs *FileSelect) Ints(ctx context.Context) ([]int, error) {
 	if len(fs.fields) > 1 {
 		return nil, errors.New("ent: FileSelect.Ints is not achievable when selecting more than 1 field")
@@ -924,7 +985,7 @@ func (fs *FileSelect) IntsX(ctx context.Context) []int {
 	return v
 }
 
-// Int returns a single int from selector. It is only allowed when selecting one field.
+// Int returns a single int from a selector. It is only allowed when selecting one field.
 func (fs *FileSelect) Int(ctx context.Context) (_ int, err error) {
 	var v []int
 	if v, err = fs.Ints(ctx); err != nil {
@@ -950,7 +1011,7 @@ func (fs *FileSelect) IntX(ctx context.Context) int {
 	return v
 }
 
-// Float64s returns list of float64s from selector. It is only allowed when selecting one field.
+// Float64s returns list of float64s from a selector. It is only allowed when selecting one field.
 func (fs *FileSelect) Float64s(ctx context.Context) ([]float64, error) {
 	if len(fs.fields) > 1 {
 		return nil, errors.New("ent: FileSelect.Float64s is not achievable when selecting more than 1 field")
@@ -971,7 +1032,7 @@ func (fs *FileSelect) Float64sX(ctx context.Context) []float64 {
 	return v
 }
 
-// Float64 returns a single float64 from selector. It is only allowed when selecting one field.
+// Float64 returns a single float64 from a selector. It is only allowed when selecting one field.
 func (fs *FileSelect) Float64(ctx context.Context) (_ float64, err error) {
 	var v []float64
 	if v, err = fs.Float64s(ctx); err != nil {
@@ -997,7 +1058,7 @@ func (fs *FileSelect) Float64X(ctx context.Context) float64 {
 	return v
 }
 
-// Bools returns list of bools from selector. It is only allowed when selecting one field.
+// Bools returns list of bools from a selector. It is only allowed when selecting one field.
 func (fs *FileSelect) Bools(ctx context.Context) ([]bool, error) {
 	if len(fs.fields) > 1 {
 		return nil, errors.New("ent: FileSelect.Bools is not achievable when selecting more than 1 field")
@@ -1018,7 +1079,7 @@ func (fs *FileSelect) BoolsX(ctx context.Context) []bool {
 	return v
 }
 
-// Bool returns a single bool from selector. It is only allowed when selecting one field.
+// Bool returns a single bool from a selector. It is only allowed when selecting one field.
 func (fs *FileSelect) Bool(ctx context.Context) (_ bool, err error) {
 	var v []bool
 	if v, err = fs.Bools(ctx); err != nil {

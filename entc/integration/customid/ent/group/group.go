@@ -11,11 +11,9 @@ const (
 	Label = "group"
 	// FieldID holds the string denoting the id field in the database.
 	FieldID = "id"
-
 	// EdgeUsers holds the string denoting the users edge name in mutations.
 	EdgeUsers = "users"
-
-	// UserFieldID holds the string denoting the id field of the User.
+	// UserFieldID holds the string denoting the ID field of the User.
 	UserFieldID = "oid"
 	// Table holds the table name of the group in the database.
 	Table = "groups"
@@ -36,3 +34,13 @@ var (
 	// primary key for the users relation (M2M).
 	UsersPrimaryKey = []string{"group_id", "user_id"}
 )
+
+// ValidColumn reports if the column name is valid (part of the table columns).
+func ValidColumn(column string) bool {
+	for i := range Columns {
+		if column == Columns[i] {
+			return true
+		}
+	}
+	return false
+}

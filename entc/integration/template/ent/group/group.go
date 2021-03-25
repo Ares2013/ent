@@ -13,7 +13,6 @@ const (
 	FieldID = "id"
 	// FieldMaxUsers holds the string denoting the max_users field in the database.
 	FieldMaxUsers = "max_users"
-
 	// Table holds the table name of the group in the database.
 	Table = "groups"
 )
@@ -22,4 +21,14 @@ const (
 var Columns = []string{
 	FieldID,
 	FieldMaxUsers,
+}
+
+// ValidColumn reports if the column name is valid (part of the table columns).
+func ValidColumn(column string) bool {
+	for i := range Columns {
+		if column == Columns[i] {
+			return true
+		}
+	}
+	return false
 }

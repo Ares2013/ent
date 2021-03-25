@@ -10,10 +10,10 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/facebook/ent/dialect/sql/sqlgraph"
-	"github.com/facebook/ent/entc/integration/ent/card"
-	"github.com/facebook/ent/entc/integration/ent/spec"
-	"github.com/facebook/ent/schema/field"
+	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/entc/integration/ent/card"
+	"entgo.io/ent/entc/integration/ent/spec"
+	"entgo.io/ent/schema/field"
 )
 
 // SpecCreate is the builder for creating a Spec entity.
@@ -23,13 +23,13 @@ type SpecCreate struct {
 	hooks    []Hook
 }
 
-// AddCardIDs adds the card edge to Card by ids.
+// AddCardIDs adds the "card" edge to the Card entity by IDs.
 func (sc *SpecCreate) AddCardIDs(ids ...int) *SpecCreate {
 	sc.mutation.AddCardIDs(ids...)
 	return sc
 }
 
-// AddCard adds the card edges to Card.
+// AddCard adds the "card" edges to the Card entity.
 func (sc *SpecCreate) AddCard(c ...*Card) *SpecCreate {
 	ids := make([]int, len(c))
 	for i := range c {
@@ -45,20 +45,23 @@ func (sc *SpecCreate) Mutation() *SpecMutation {
 
 // Save creates the Spec in the database.
 func (sc *SpecCreate) Save(ctx context.Context) (*Spec, error) {
-	if err := sc.preSave(); err != nil {
-		return nil, err
-	}
 	var (
 		err  error
 		node *Spec
 	)
 	if len(sc.hooks) == 0 {
+		if err = sc.check(); err != nil {
+			return nil, err
+		}
 		node, err = sc.sqlSave(ctx)
 	} else {
 		var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 			mutation, ok := m.(*SpecMutation)
 			if !ok {
 				return nil, fmt.Errorf("unexpected mutation type %T", m)
+			}
+			if err = sc.check(); err != nil {
+				return nil, err
 			}
 			sc.mutation = mutation
 			node, err = sc.sqlSave(ctx)
@@ -84,12 +87,13 @@ func (sc *SpecCreate) SaveX(ctx context.Context) *Spec {
 	return v
 }
 
-func (sc *SpecCreate) preSave() error {
+// check runs all checks and user-defined validators on the builder.
+func (sc *SpecCreate) check() error {
 	return nil
 }
 
 func (sc *SpecCreate) sqlSave(ctx context.Context) (*Spec, error) {
-	s, _spec := sc.createSpec()
+	_node, _spec := sc.createSpec()
 	if err := sqlgraph.CreateNode(ctx, sc.driver, _spec); err != nil {
 		if cerr, ok := isSQLConstraintError(err); ok {
 			err = cerr
@@ -97,13 +101,13 @@ func (sc *SpecCreate) sqlSave(ctx context.Context) (*Spec, error) {
 		return nil, err
 	}
 	id := _spec.ID.Value.(int64)
-	s.ID = int(id)
-	return s, nil
+	_node.ID = int(id)
+	return _node, nil
 }
 
 func (sc *SpecCreate) createSpec() (*Spec, *sqlgraph.CreateSpec) {
 	var (
-		s     = &Spec{config: sc.config}
+		_node = &Spec{config: sc.config}
 		_spec = &sqlgraph.CreateSpec{
 			Table: spec.Table,
 			ID: &sqlgraph.FieldSpec{
@@ -131,10 +135,10 @@ func (sc *SpecCreate) createSpec() (*Spec, *sqlgraph.CreateSpec) {
 		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	return s, _spec
+	return _node, _spec
 }
 
-// SpecCreateBulk is the builder for creating a bulk of Spec entities.
+// SpecCreateBulk is the builder for creating many Spec entities in bulk.
 type SpecCreateBulk struct {
 	config
 	builders []*SpecCreate
@@ -149,12 +153,12 @@ func (scb *SpecCreateBulk) Save(ctx context.Context) ([]*Spec, error) {
 		func(i int, root context.Context) {
 			builder := scb.builders[i]
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
-				if err := builder.preSave(); err != nil {
-					return nil, err
-				}
 				mutation, ok := m.(*SpecMutation)
 				if !ok {
 					return nil, fmt.Errorf("unexpected mutation type %T", m)
+				}
+				if err := builder.check(); err != nil {
+					return nil, err
 				}
 				builder.mutation = mutation
 				nodes[i], specs[i] = builder.createSpec()
@@ -191,7 +195,7 @@ func (scb *SpecCreateBulk) Save(ctx context.Context) ([]*Spec, error) {
 	return nodes, nil
 }
 
-// SaveX calls Save and panics if Save returns an error.
+// SaveX is like Save, but panics if an error occurs.
 func (scb *SpecCreateBulk) SaveX(ctx context.Context) []*Spec {
 	v, err := scb.Save(ctx)
 	if err != nil {

@@ -7,8 +7,8 @@
 package migrate
 
 import (
-	"github.com/facebook/ent/dialect/sql/schema"
-	"github.com/facebook/ent/schema/field"
+	"entgo.io/ent/dialect/sql/schema"
+	"entgo.io/ent/schema/field"
 )
 
 var (
@@ -37,16 +37,14 @@ var (
 		PrimaryKey: []*schema.Column{UserFollowingColumns[0], UserFollowingColumns[1]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
-				Symbol:  "user_following_user_id",
-				Columns: []*schema.Column{UserFollowingColumns[0]},
-
+				Symbol:     "user_following_user_id",
+				Columns:    []*schema.Column{UserFollowingColumns[0]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
 			{
-				Symbol:  "user_following_follower_id",
-				Columns: []*schema.Column{UserFollowingColumns[1]},
-
+				Symbol:     "user_following_follower_id",
+				Columns:    []*schema.Column{UserFollowingColumns[1]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.Cascade,
 			},

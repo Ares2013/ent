@@ -11,7 +11,6 @@ const (
 	Label = "pet"
 	// FieldID holds the string denoting the id field in the database.
 	FieldID = "id"
-
 	// EdgeOwner holds the string denoting the owner edge name in mutations.
 	EdgeOwner = "owner"
 	// EdgeCars holds the string denoting the cars edge name in mutations.
@@ -20,8 +19,7 @@ const (
 	EdgeFriends = "friends"
 	// EdgeBestFriend holds the string denoting the best_friend edge name in mutations.
 	EdgeBestFriend = "best_friend"
-
-	// UserFieldID holds the string denoting the id field of the User.
+	// UserFieldID holds the string denoting the ID field of the User.
 	UserFieldID = "oid"
 	// Table holds the table name of the pet in the database.
 	Table = "pets"
@@ -52,7 +50,8 @@ var Columns = []string{
 	FieldID,
 }
 
-// ForeignKeys holds the SQL foreign-keys that are owned by the Pet type.
+// ForeignKeys holds the SQL foreign-keys that are owned by the "pets"
+// table and are not defined as standalone fields in the schema.
 var ForeignKeys = []string{
 	"pet_best_friend",
 	"user_pets",
@@ -64,7 +63,24 @@ var (
 	FriendsPrimaryKey = []string{"pet_id", "friend_id"}
 )
 
+// ValidColumn reports if the column name is valid (part of the table columns).
+func ValidColumn(column string) bool {
+	for i := range Columns {
+		if column == Columns[i] {
+			return true
+		}
+	}
+	for i := range ForeignKeys {
+		if column == ForeignKeys[i] {
+			return true
+		}
+	}
+	return false
+}
+
 var (
+	// DefaultID holds the default value on creation for the "id" field.
+	DefaultID func() string
 	// IDValidator is a validator for the "id" field. It is called by the builders before save.
 	IDValidator func(string) error
 )

@@ -11,13 +11,13 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/facebook/ent/dialect/gremlin"
-	"github.com/facebook/ent/dialect/gremlin/graph/dsl"
-	"github.com/facebook/ent/dialect/gremlin/graph/dsl/__"
-	"github.com/facebook/ent/dialect/gremlin/graph/dsl/g"
-	"github.com/facebook/ent/dialect/gremlin/graph/dsl/p"
-	"github.com/facebook/ent/entc/integration/gremlin/ent/group"
-	"github.com/facebook/ent/entc/integration/gremlin/ent/groupinfo"
+	"entgo.io/ent/dialect/gremlin"
+	"entgo.io/ent/dialect/gremlin/graph/dsl"
+	"entgo.io/ent/dialect/gremlin/graph/dsl/__"
+	"entgo.io/ent/dialect/gremlin/graph/dsl/g"
+	"entgo.io/ent/dialect/gremlin/graph/dsl/p"
+	"entgo.io/ent/entc/integration/gremlin/ent/group"
+	"entgo.io/ent/entc/integration/gremlin/ent/groupinfo"
 )
 
 // GroupInfoCreate is the builder for creating a GroupInfo entity.
@@ -27,19 +27,19 @@ type GroupInfoCreate struct {
 	hooks    []Hook
 }
 
-// SetDesc sets the desc field.
+// SetDesc sets the "desc" field.
 func (gic *GroupInfoCreate) SetDesc(s string) *GroupInfoCreate {
 	gic.mutation.SetDesc(s)
 	return gic
 }
 
-// SetMaxUsers sets the max_users field.
+// SetMaxUsers sets the "max_users" field.
 func (gic *GroupInfoCreate) SetMaxUsers(i int) *GroupInfoCreate {
 	gic.mutation.SetMaxUsers(i)
 	return gic
 }
 
-// SetNillableMaxUsers sets the max_users field if the given value is not nil.
+// SetNillableMaxUsers sets the "max_users" field if the given value is not nil.
 func (gic *GroupInfoCreate) SetNillableMaxUsers(i *int) *GroupInfoCreate {
 	if i != nil {
 		gic.SetMaxUsers(*i)
@@ -47,13 +47,13 @@ func (gic *GroupInfoCreate) SetNillableMaxUsers(i *int) *GroupInfoCreate {
 	return gic
 }
 
-// AddGroupIDs adds the groups edge to Group by ids.
+// AddGroupIDs adds the "groups" edge to the Group entity by IDs.
 func (gic *GroupInfoCreate) AddGroupIDs(ids ...string) *GroupInfoCreate {
 	gic.mutation.AddGroupIDs(ids...)
 	return gic
 }
 
-// AddGroups adds the groups edges to Group.
+// AddGroups adds the "groups" edges to the Group entity.
 func (gic *GroupInfoCreate) AddGroups(g ...*Group) *GroupInfoCreate {
 	ids := make([]string, len(g))
 	for i := range g {
@@ -69,20 +69,24 @@ func (gic *GroupInfoCreate) Mutation() *GroupInfoMutation {
 
 // Save creates the GroupInfo in the database.
 func (gic *GroupInfoCreate) Save(ctx context.Context) (*GroupInfo, error) {
-	if err := gic.preSave(); err != nil {
-		return nil, err
-	}
 	var (
 		err  error
 		node *GroupInfo
 	)
+	gic.defaults()
 	if len(gic.hooks) == 0 {
+		if err = gic.check(); err != nil {
+			return nil, err
+		}
 		node, err = gic.gremlinSave(ctx)
 	} else {
 		var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 			mutation, ok := m.(*GroupInfoMutation)
 			if !ok {
 				return nil, fmt.Errorf("unexpected mutation type %T", m)
+			}
+			if err = gic.check(); err != nil {
+				return nil, err
 			}
 			gic.mutation = mutation
 			node, err = gic.gremlinSave(ctx)
@@ -108,13 +112,21 @@ func (gic *GroupInfoCreate) SaveX(ctx context.Context) *GroupInfo {
 	return v
 }
 
-func (gic *GroupInfoCreate) preSave() error {
+// defaults sets the default values of the builder before save.
+func (gic *GroupInfoCreate) defaults() {
+	if _, ok := gic.mutation.MaxUsers(); !ok {
+		v := groupinfo.DefaultMaxUsers
+		gic.mutation.SetMaxUsers(v)
+	}
+}
+
+// check runs all checks and user-defined validators on the builder.
+func (gic *GroupInfoCreate) check() error {
 	if _, ok := gic.mutation.Desc(); !ok {
 		return &ValidationError{Name: "desc", err: errors.New("ent: missing required field \"desc\"")}
 	}
 	if _, ok := gic.mutation.MaxUsers(); !ok {
-		v := groupinfo.DefaultMaxUsers
-		gic.mutation.SetMaxUsers(v)
+		return &ValidationError{Name: "max_users", err: errors.New("ent: missing required field \"max_users\"")}
 	}
 	return nil
 }
@@ -165,7 +177,7 @@ func (gic *GroupInfoCreate) gremlin() *dsl.Traversal {
 	return tr
 }
 
-// GroupInfoCreateBulk is the builder for creating a bulk of GroupInfo entities.
+// GroupInfoCreateBulk is the builder for creating many GroupInfo entities in bulk.
 type GroupInfoCreateBulk struct {
 	config
 	builders []*GroupInfoCreate

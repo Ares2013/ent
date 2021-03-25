@@ -12,29 +12,47 @@ import (
 	"math"
 	"strings"
 	"time"
-	{{- /* ignore generting on graph specififc templates */}}
+	{{- /* Ignore generting on graph specififc templates */}}
 	{{- if not (eq $.Config.Package $.Package) }}
 		"{{ $.Config.Package }}/predicate"
 		{{- with $.ID.Type.PkgPath }}
 			"{{ . }}"
 		{{- end }}
-		{{- range $f := $.Fields }}
-			{{- $pkg := $f.Type.PkgPath }}
-			{{- if and $pkg (not (hasImport (base $pkg ))) }}
-				"{{ $pkg }}"
-			{{- end }}
-		{{- end }}
+		{{- /* Import external packages */}}
+        {{- template "import/types" $ }}
 	{{- end }}
-	"github.com/facebook/ent"
-	"github.com/facebook/ent/dialect"
+	"entgo.io/ent"
+	"entgo.io/ent/dialect"
 	{{- with $.Storage }}
 		{{- range $import := .Imports }}
 			"{{ $import }}"
 		{{- end }}
 	{{- end }}
-	{{ template "imports/additional" $ }}
+	{{- template "import/additional" $ }}
 )
 {{ end }}
 
-{{/* A template that can be overrided in order to add additional imports to packages.*/}}
-{{ define "imports/additional" }}{{end}}
+{{/* A template for importing fields with custom types */}}
+{{ define "import/types" -}}
+	{{- $fields := $.Fields }}{{ if $.ID.UserDefined }}{{ $fields = append $fields $.ID }}{{ end }}
+	{{- range $f := $fields }}
+		{{- $pkg := $f.Type.PkgPath }}
+		{{- if and $pkg (not (hasImport (base $pkg ))) }}
+			"{{ $pkg }}"
+		{{- end }}
+	{{- end }}
+{{- end }}
+
+{{/* A template for allowing additional imports by ent extensions or user templates.*/}}
+{{ define "import/additional" }}
+	{{- with $tmpls := matchTemplate "import/additional/*" }}
+		{{- range $tmpl := $tmpls }}
+			{{- xtemplate $tmpl $ }}
+		{{- end }}
+	{{- end }}
+	{{- with $tmpls := matchTemplate (printf "dialect/%s/import/additional/*" $.Storage) }}
+		{{- range $tmpl := $tmpls }}
+			{{- xtemplate $tmpl $ }}
+		{{- end }}
+	{{- end }}
+{{ end }}

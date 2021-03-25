@@ -5,11 +5,13 @@
 package sql
 
 import (
+	"context"
+	"fmt"
 	"strconv"
 	"strings"
 	"testing"
 
-	"github.com/facebook/ent/dialect"
+	"entgo.io/ent/dialect"
 	"github.com/stretchr/testify/require"
 )
 
@@ -58,8 +60,9 @@ func TestBuilder(t *testing.T) {
 				).
 				PrimaryKey("id").
 				Charset("utf8mb4").
-				Collate("utf8mb4_general_ci"),
-			wantQuery: "CREATE TABLE `users`(`id` int auto_increment, `name` varchar(255), PRIMARY KEY(`id`)) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci",
+				Collate("utf8mb4_general_ci").
+				Options("ENGINE=InnoDB"),
+			wantQuery: "CREATE TABLE `users`(`id` int auto_increment, `name` varchar(255), PRIMARY KEY(`id`)) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci ENGINE=InnoDB",
 		},
 		{
 			input: CreateTable("users").
@@ -76,11 +79,14 @@ func TestBuilder(t *testing.T) {
 				Columns(
 					Column("id").Type("int").Attr("auto_increment"),
 					Column("card_id").Type("int"),
+					Column("doc").Type("longtext").Check(func(b *Builder) {
+						b.WriteString("JSON_VALID(").Ident("doc").WriteByte(')')
+					}),
 				).
 				PrimaryKey("id", "name").
 				ForeignKeys(ForeignKey().Columns("card_id").
 					Reference(Reference().Table("cards").Columns("id")).OnDelete("SET NULL")),
-			wantQuery: "CREATE TABLE IF NOT EXISTS `users`(`id` int auto_increment, `card_id` int, PRIMARY KEY(`id`, `name`), FOREIGN KEY(`card_id`) REFERENCES `cards`(`id`) ON DELETE SET NULL)",
+			wantQuery: "CREATE TABLE IF NOT EXISTS `users`(`id` int auto_increment, `card_id` int, `doc` longtext CHECK (JSON_VALID(`doc`)), PRIMARY KEY(`id`, `name`), FOREIGN KEY(`card_id`) REFERENCES `cards`(`id`) ON DELETE SET NULL)",
 		},
 		{
 			input: Dialect(dialect.Postgres).CreateTable("users").
@@ -219,8 +225,23 @@ func TestBuilder(t *testing.T) {
 			wantArgs:  []interface{}{1},
 		},
 		{
+			input:     Insert("users").Columns("age").Values(1).Schema("mydb"),
+			wantQuery: "INSERT INTO `mydb`.`users` (`age`) VALUES (?)",
+			wantArgs:  []interface{}{1},
+		},
+		{
 			input:     Dialect(dialect.Postgres).Insert("users").Columns("age").Values(1),
 			wantQuery: `INSERT INTO "users" ("age") VALUES ($1)`,
+			wantArgs:  []interface{}{1},
+		},
+		{
+			input:     Dialect(dialect.Postgres).Insert("users").Columns("age").Values(1).Schema("mydb"),
+			wantQuery: `INSERT INTO "mydb"."users" ("age") VALUES ($1)`,
+			wantArgs:  []interface{}{1},
+		},
+		{
+			input:     Dialect(dialect.SQLite).Insert("users").Columns("age").Values(1).Schema("mydb"),
+			wantQuery: "INSERT INTO `users` (`age`) VALUES (?)",
 			wantArgs:  []interface{}{1},
 		},
 		{
@@ -268,8 +289,23 @@ func TestBuilder(t *testing.T) {
 			wantArgs:  []interface{}{"foo"},
 		},
 		{
+			input:     Update("users").Set("name", "foo").Schema("mydb"),
+			wantQuery: "UPDATE `mydb`.`users` SET `name` = ?",
+			wantArgs:  []interface{}{"foo"},
+		},
+		{
 			input:     Dialect(dialect.Postgres).Update("users").Set("name", "foo"),
 			wantQuery: `UPDATE "users" SET "name" = $1`,
+			wantArgs:  []interface{}{"foo"},
+		},
+		{
+			input:     Dialect(dialect.Postgres).Update("users").Set("name", "foo").Schema("mydb"),
+			wantQuery: `UPDATE "mydb"."users" SET "name" = $1`,
+			wantArgs:  []interface{}{"foo"},
+		},
+		{
+			input:     Dialect(dialect.SQLite).Update("users").Set("name", "foo").Schema("mydb"),
+			wantQuery: "UPDATE `users` SET `name` = ?",
 			wantArgs:  []interface{}{"foo"},
 		},
 		{
@@ -288,9 +324,28 @@ func TestBuilder(t *testing.T) {
 			wantArgs:  []interface{}{"foo", "bar"},
 		},
 		{
+			input:     Update("users").Set("name", "foo").Where(EQ("name", Expr("?", "bar"))),
+			wantQuery: "UPDATE `users` SET `name` = ? WHERE `name` = ?",
+			wantArgs:  []interface{}{"foo", "bar"},
+		},
+		{
 			input:     Dialect(dialect.Postgres).Update("users").Set("name", "foo").Where(EQ("name", "bar")),
 			wantQuery: `UPDATE "users" SET "name" = $1 WHERE "name" = $2`,
 			wantArgs:  []interface{}{"foo", "bar"},
+		},
+		{
+			input: func() Querier {
+				p1, p2 := EQ("name", "bar"), Or(EQ("age", 10), EQ("age", 20))
+				return Dialect(dialect.Postgres).
+					Update("users").
+					Set("name", "foo").
+					Where(p1).
+					Where(p2).
+					Where(p1).
+					Where(p2)
+			}(),
+			wantQuery: `UPDATE "users" SET "name" = $1 WHERE (("name" = $2 AND ("age" = $3 OR "age" = $4)) AND "name" = $5) AND ("age" = $6 OR "age" = $7)`,
+			wantArgs:  []interface{}{"foo", "bar", 10, 20, "bar", 10, 20},
 		},
 		{
 			input:     Update("users").Set("name", "foo").SetNull("spouse_id"),
@@ -471,10 +526,30 @@ func TestBuilder(t *testing.T) {
 			wantQuery: "DELETE FROM `users` WHERE `parent_id` IS NOT NULL",
 		},
 		{
+			input: Delete("users").
+				Where(NotNull("parent_id")).
+				Schema("mydb"),
+			wantQuery: "DELETE FROM `mydb`.`users` WHERE `parent_id` IS NOT NULL",
+		},
+		{
+			input: Dialect(dialect.SQLite).
+				Delete("users").
+				Where(NotNull("parent_id")).
+				Schema("mydb"),
+			wantQuery: "DELETE FROM `users` WHERE `parent_id` IS NOT NULL",
+		},
+		{
 			input: Dialect(dialect.Postgres).
 				Delete("users").
 				Where(IsNull("parent_id")),
 			wantQuery: `DELETE FROM "users" WHERE "parent_id" IS NULL`,
+		},
+		{
+			input: Dialect(dialect.Postgres).
+				Delete("users").
+				Where(IsNull("parent_id")).
+				Schema("mydb"),
+			wantQuery: `DELETE FROM "mydb"."users" WHERE "parent_id" IS NULL`,
 		},
 		{
 			input: Delete("users").
@@ -658,6 +733,44 @@ func TestBuilder(t *testing.T) {
 			}(),
 			wantQuery: `SELECT "u"."id", "g"."name" FROM "users" AS "u" JOIN "groups" AS "g" ON "u"."id" = "g"."user_id" WHERE "u"."name" = $1 AND "g"."name" IS NOT NULL`,
 			wantArgs:  []interface{}{"bar"},
+		},
+		{
+			input: func() Querier {
+				t1 := Table("users").As("u")
+				t2 := Table("user_groups").As("ug")
+				return Select(t1.C("id"), As(Count("`*`"), "group_count")).
+					From(t1).
+					LeftJoin(t2).
+					On(t1.C("id"), t2.C("user_id")).
+					GroupBy(t1.C("id"))
+			}(),
+			wantQuery: "SELECT `u`.`id`, COUNT(`*`) AS `group_count` FROM `users` AS `u` LEFT JOIN `user_groups` AS `ug` ON `u`.`id` = `ug`.`user_id` GROUP BY `u`.`id`",
+		},
+		{
+			input: func() Querier {
+				t1 := Table("users").As("u")
+				t2 := Table("user_groups").As("ug")
+				return Select(t1.C("id"), As(Count("`*`"), "group_count")).
+					From(t1).
+					LeftJoin(t2).
+					OnP(P(func(b *Builder) {
+						b.Ident(t1.C("id")).WriteOp(OpEQ).Ident(t2.C("user_id"))
+					})).
+					GroupBy(t1.C("id")).Clone()
+			}(),
+			wantQuery: "SELECT `u`.`id`, COUNT(`*`) AS `group_count` FROM `users` AS `u` LEFT JOIN `user_groups` AS `ug` ON `u`.`id` = `ug`.`user_id` GROUP BY `u`.`id`",
+		},
+		{
+			input: func() Querier {
+				t1 := Table("groups").As("g")
+				t2 := Table("user_groups").As("ug")
+				return Select(t1.C("id"), As(Count("`*`"), "user_count")).
+					From(t1).
+					RightJoin(t2).
+					On(t1.C("id"), t2.C("group_id")).
+					GroupBy(t1.C("id"))
+			}(),
+			wantQuery: "SELECT `g`.`id`, COUNT(`*`) AS `user_count` FROM `groups` AS `g` RIGHT JOIN `user_groups` AS `ug` ON `g`.`id` = `ug`.`group_id` GROUP BY `g`.`id`",
 		},
 		{
 			input: func() Querier {
@@ -1016,16 +1129,14 @@ func TestBuilder(t *testing.T) {
 			input: Select("*").
 				From(Table("users")).
 				Limit(1),
-			wantQuery: "SELECT * FROM `users` LIMIT ?",
-			wantArgs:  []interface{}{1},
+			wantQuery: "SELECT * FROM `users` LIMIT 1",
 		},
 		{
 			input: Dialect(dialect.Postgres).
 				Select("*").
 				From(Table("users")).
 				Limit(1),
-			wantQuery: `SELECT * FROM "users" LIMIT $1`,
-			wantArgs:  []interface{}{1},
+			wantQuery: `SELECT * FROM "users" LIMIT 1`,
 		},
 		{
 			input:     Select("age").Distinct().From(Table("users")),
@@ -1091,8 +1202,8 @@ func TestBuilder(t *testing.T) {
 					Join(t4).
 					On(t1.C("id"), t4.C("id")).Limit(1)
 			}(),
-			wantQuery: `SELECT * FROM "groups" JOIN (SELECT "user_groups"."id" FROM "user_groups" JOIN "users" AS "t0" ON "user_groups"."id" = "t0"."id2" WHERE "t0"."id" = $1) AS "t1" ON "groups"."id" = "t1"."id" LIMIT $2`,
-			wantArgs:  []interface{}{"baz", 1},
+			wantQuery: `SELECT * FROM "groups" JOIN (SELECT "user_groups"."id" FROM "user_groups" JOIN "users" AS "t0" ON "user_groups"."id" = "t0"."id2" WHERE "t0"."id" = $1) AS "t1" ON "groups"."id" = "t1"."id" LIMIT 1`,
+			wantArgs:  []interface{}{"baz"},
 		},
 		{
 			input: func() Querier {
@@ -1203,15 +1314,140 @@ func TestBuilder(t *testing.T) {
 				Or().
 				Where(And(NEQ("f", "f"), NEQ("g", "g"))),
 			wantQuery: strings.NewReplacer("\n", "", "\t", "").Replace(`
-SELECT * FROM "users" 
-WHERE 
-	(
-		(("id" = $1 AND "group_id" IN ($2, $3)) OR ("id" = $4 AND "group_id" IN ($5, $6))) 
-		AND 
-		(("a" = $7 OR ("b" = $8 AND "c" = $9)) AND (NOT ("d" IS NULL OR "e" IS NOT NULL)))
-	) 
-	OR ("f" <> $10 AND "g" <> $11)`),
+			SELECT * FROM "users"
+ WHERE
+	 (
+		(("id" = $1 AND "group_id" IN ($2, $3)) OR ("id" = $4 AND "group_id" IN ($5, $6)))
+		 AND
+		 (("a" = $7 OR ("b" = $8 AND "c" = $9)) AND (NOT ("d" IS NULL OR "e" IS NOT NULL)))
+	)
+	 OR ("f" <> $10 AND "g" <> $11)`),
 			wantArgs: []interface{}{1, 2, 3, 2, 4, 5, "a", "b", "c", "f", "g"},
+		},
+		{
+			input: Dialect(dialect.Postgres).
+				Select("*").
+				From(Table("test")).
+				Where(P(func(b *Builder) {
+					b.WriteString("nlevel(").Ident("path").WriteByte(')').WriteOp(OpGT).Arg(1)
+				})),
+			wantQuery: `SELECT * FROM "test" WHERE nlevel("path") > $1`,
+			wantArgs:  []interface{}{1},
+		},
+		{
+			input: Dialect(dialect.Postgres).
+				Select("*").
+				From(Table("test")).
+				Where(P(func(b *Builder) {
+					b.WriteString("nlevel(").Ident("path").WriteByte(')').WriteOp(OpGT).Arg(1)
+				})),
+			wantQuery: `SELECT * FROM "test" WHERE nlevel("path") > $1`,
+			wantArgs:  []interface{}{1},
+		},
+		{
+			input: func() Querier {
+				t1, t2 := Table("users").Schema("s1"), Table("pets").Schema("s2")
+				return Select("*").
+					From(t1).Join(t2).
+					OnP(P(func(b *Builder) {
+						b.Ident(t1.C("id")).WriteOp(OpEQ).Ident(t2.C("owner_id"))
+					})).
+					Where(EQ(t2.C("name"), "pedro"))
+			}(),
+			wantQuery: "SELECT * FROM `s1`.`users` JOIN `s2`.`pets` AS `t0` ON `s1`.`users`.`id` = `t0`.`owner_id` WHERE `t0`.`name` = ?",
+			wantArgs:  []interface{}{"pedro"},
+		},
+		{
+			input: func() Querier {
+				t1, t2 := Table("users").Schema("s1"), Table("pets").Schema("s2")
+				sel := Select("*").
+					From(t1).Join(t2).
+					OnP(P(func(b *Builder) {
+						b.Ident(t1.C("id")).WriteOp(OpEQ).Ident(t2.C("owner_id"))
+					})).
+					Where(EQ(t2.C("name"), "pedro"))
+				sel.SetDialect(dialect.SQLite)
+				return sel
+			}(),
+			wantQuery: "SELECT * FROM `users` JOIN `pets` AS `t0` ON `users`.`id` = `t0`.`owner_id` WHERE `t0`.`name` = ?",
+			wantArgs:  []interface{}{"pedro"},
+		},
+		{
+			input: Dialect(dialect.Postgres).
+				Select("*").
+				From(Table("users")).
+				Where(ExprP("name = $1", "pedro")).
+				Where(P(func(b *Builder) {
+					b.Join(Expr("name = $2", "pedro"))
+				})).
+				Where(EQ("name", "pedro")).
+				Where(
+					And(
+						In(
+							"id",
+							Select("owner_id").
+								From(Table("pets")).
+								Where(EQ("name", "luna")),
+						),
+						EQ("active", true),
+					),
+				),
+			wantQuery: `SELECT * FROM "users" WHERE ((name = $1 AND name = $2) AND "name" = $3) AND ("id" IN (SELECT "owner_id" FROM "pets" WHERE "name" = $4) AND "active" = $5)`,
+			wantArgs:  []interface{}{"pedro", "pedro", "pedro", "luna", true},
+		},
+		{
+			input: func() Querier {
+				t1 := Table("users")
+				return Dialect(dialect.Postgres).
+					Select().
+					From(t1).
+					Where(ColumnsEQ(t1.C("id1"), t1.C("id2"))).
+					Where(ColumnsNEQ(t1.C("id1"), t1.C("id2"))).
+					Where(ColumnsGT(t1.C("id1"), t1.C("id2"))).
+					Where(ColumnsGTE(t1.C("id1"), t1.C("id2"))).
+					Where(ColumnsLT(t1.C("id1"), t1.C("id2"))).
+					Where(ColumnsLTE(t1.C("id1"), t1.C("id2")))
+			}(),
+			wantQuery: strings.ReplaceAll(`
+SELECT * FROM "users" 
+WHERE (((("users"."id1" = "users"."id2" AND "users"."id1" <> "users"."id2") 
+AND "users"."id1" > "users"."id2") AND "users"."id1" >= "users"."id2") 
+AND "users"."id1" < "users"."id2") AND "users"."id1" <= "users"."id2"`, "\n", ""),
+		},
+		{
+			input:     Dialect(dialect.Postgres).Insert("users").Columns("id", "email").Values("1", "user@example.com").ConflictColumns("id").UpdateSet("email", "user-1@example.com"),
+			wantQuery: `INSERT INTO "users" ("id", "email") VALUES ($1, $2) ON CONFLICT ("id") DO UPDATE SET "id" = "excluded"."id", "email" = "excluded"."email"`,
+			wantArgs:  []interface{}{"1", "user@example.com"},
+		},
+		{
+			input:     Dialect(dialect.Postgres).Insert("users").Columns("id", "email").Values("1", "user@example.com").OnConflict(OpResolveWithIgnore).ConflictColumns("id"),
+			wantQuery: `INSERT INTO "users" ("id", "email") VALUES ($1, $2) ON CONFLICT ("id") DO UPDATE SET "id" = "id", "email" = "email"`,
+			wantArgs:  []interface{}{"1", "user@example.com"},
+		},
+		{
+			input:     Dialect(dialect.MySQL).Insert("users").Set("email", "user@example.com").OnConflict(OpResolveWithAlternateValues).UpdateSet("email", "user-1@example.com").ConflictColumns("email"),
+			wantQuery: "INSERT INTO `users` (`email`) VALUES (?) ON DUPLICATE KEY UPDATE `email` = ?",
+			wantArgs:  []interface{}{"user@example.com", "user-1@example.com"},
+		},
+		{
+			input:     Dialect(dialect.Postgres).Insert("users").Set("email", "user@example.com").OnConflict(OpResolveWithAlternateValues).UpdateSet("email", "user-1@example.com").ConflictColumns("email"),
+			wantQuery: `INSERT INTO "users" ("email") VALUES ($1) ON CONFLICT ("email") DO UPDATE SET "email" = $2`,
+			wantArgs:  []interface{}{"user@example.com", "user-1@example.com"},
+		},
+		{
+			input:     Dialect(dialect.Postgres).Insert("users").Set("email", "user@example.com").OnConflict(OpResolveWithIgnore).ConflictColumns("email"),
+			wantQuery: `INSERT INTO "users" ("email") VALUES ($1) ON CONFLICT ("email") DO UPDATE SET "email" = "email"`,
+			wantArgs:  []interface{}{"user@example.com"},
+		},
+		{
+			input:     Dialect(dialect.MySQL).Insert("users").Set("email", "user@example.com").OnConflict(OpResolveWithIgnore).ConflictColumns("email"),
+			wantQuery: "INSERT INTO `users` (`email`) VALUES (?) ON DUPLICATE KEY UPDATE `email` = `email`",
+			wantArgs:  []interface{}{"user@example.com"},
+		},
+		{
+			input:     Dialect(dialect.MySQL).Insert("users").Set("email", "user@example.com").OnConflict(OpResolveWithNewValues).ConflictColumns("email"),
+			wantQuery: "INSERT INTO `users` (`email`) VALUES (?) ON DUPLICATE KEY UPDATE `email` = VALUES(`email`)",
+			wantArgs:  []interface{}{"user@example.com"},
 		},
 	}
 	for i, tt := range tests {
@@ -1221,4 +1457,58 @@ WHERE
 			require.Equal(t, tt.wantArgs, args)
 		})
 	}
+}
+
+func TestBuilder_Err(t *testing.T) {
+	b := Select("i-")
+	require.NoError(t, b.Err())
+	b.AddError(fmt.Errorf("invalid"))
+	require.EqualError(t, b.Err(), "invalid")
+	b.AddError(fmt.Errorf("unexpected"))
+	require.EqualError(t, b.Err(), "invalid; unexpected")
+}
+
+func TestSelector_OrderByExpr(t *testing.T) {
+	query, args := Select("*").
+		From(Table("users")).
+		Where(GT("age", 28)).
+		OrderBy("name").
+		OrderExpr(Expr("CASE WHEN id=? THEN id WHEN id=? THEN name END DESC", 1, 2)).
+		Query()
+	require.Equal(t, "SELECT * FROM `users` WHERE `age` > ? ORDER BY `name`, CASE WHEN id=? THEN id WHEN id=? THEN name END DESC", query)
+	require.Equal(t, []interface{}{28, 1, 2}, args)
+}
+
+func TestBuilderContext(t *testing.T) {
+	type key string
+	want := "myval"
+	ctx := context.WithValue(context.Background(), key("mykey"), want)
+	sel := Dialect(dialect.Postgres).Select().WithContext(ctx)
+	if got := sel.Context().Value(key("mykey")).(string); got != want {
+		t.Fatalf("expected selector context key to be %q but got %q", want, got)
+	}
+	if got := sel.Clone().Context().Value(key("mykey")).(string); got != want {
+		t.Fatalf("expected cloned selector context key to be %q but got %q", want, got)
+	}
+}
+
+type point struct {
+	xy []float64
+	*testing.T
+}
+
+func (p point) FormatParam(placeholder string, info *StmtInfo) string {
+	require.Equal(p.T, dialect.MySQL, info.Dialect)
+	return "ST_GeomFromWKB(" + placeholder + ")"
+}
+
+func TestParamFormatter(t *testing.T) {
+	p := point{xy: []float64{1, 2}, T: t}
+	query, args := Dialect(dialect.MySQL).
+		Select().
+		From(Table("users")).
+		Where(EQ("point", p)).
+		Query()
+	require.Equal(t, "SELECT * FROM `users` WHERE `point` = ST_GeomFromWKB(?)", query)
+	require.Equal(t, p, args[0])
 }

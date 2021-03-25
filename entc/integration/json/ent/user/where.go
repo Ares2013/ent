@@ -7,11 +7,11 @@
 package user
 
 import (
-	"github.com/facebook/ent/dialect/sql"
-	"github.com/facebook/ent/entc/integration/json/ent/predicate"
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/entc/integration/json/ent/predicate"
 )
 
-// ID filters vertices based on their identifier.
+// ID filters vertices based on their ID field.
 func ID(id int) predicate.User {
 	return predicate.User(func(s *sql.Selector) {
 		s.Where(sql.EQ(s.C(FieldID), id))
@@ -91,6 +91,20 @@ func IDLT(id int) predicate.User {
 func IDLTE(id int) predicate.User {
 	return predicate.User(func(s *sql.Selector) {
 		s.Where(sql.LTE(s.C(FieldID), id))
+	})
+}
+
+// TIsNil applies the IsNil predicate on the "t" field.
+func TIsNil() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		s.Where(sql.IsNull(s.C(FieldT)))
+	})
+}
+
+// TNotNil applies the NotNil predicate on the "t" field.
+func TNotNil() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		s.Where(sql.NotNull(s.C(FieldT)))
 	})
 }
 
@@ -178,7 +192,7 @@ func StringsNotNil() predicate.User {
 	})
 }
 
-// And groups list of predicates with the AND operator between them.
+// And groups predicates with the AND operator between them.
 func And(predicates ...predicate.User) predicate.User {
 	return predicate.User(func(s *sql.Selector) {
 		s1 := s.Clone().SetP(nil)
@@ -189,7 +203,7 @@ func And(predicates ...predicate.User) predicate.User {
 	})
 }
 
-// Or groups list of predicates with the OR operator between them.
+// Or groups predicates with the OR operator between them.
 func Or(predicates ...predicate.User) predicate.User {
 	return predicate.User(func(s *sql.Selector) {
 		s1 := s.Clone().SetP(nil)

@@ -19,14 +19,14 @@ const (
 	FieldUser = "user"
 	// FieldGroup holds the string denoting the group field in the database.
 	FieldGroup = "group"
-
+	// FieldOp holds the string denoting the op field in the database.
+	FieldOp = "op"
 	// EdgeOwner holds the string denoting the owner edge name in mutations.
 	EdgeOwner = "owner"
 	// EdgeType holds the string denoting the type edge name in mutations.
 	EdgeType = "type"
 	// EdgeField holds the string denoting the field edge name in mutations.
 	EdgeField = "field"
-
 	// Table holds the table name of the file in the database.
 	Table = "files"
 	// OwnerTable is the table the holds the owner relation/edge.
@@ -59,17 +59,34 @@ var Columns = []string{
 	FieldName,
 	FieldUser,
 	FieldGroup,
+	FieldOp,
 }
 
-// ForeignKeys holds the SQL foreign-keys that are owned by the File type.
+// ForeignKeys holds the SQL foreign-keys that are owned by the "files"
+// table and are not defined as standalone fields in the schema.
 var ForeignKeys = []string{
 	"file_type_files",
 	"group_files",
 	"user_files",
 }
 
+// ValidColumn reports if the column name is valid (part of the table columns).
+func ValidColumn(column string) bool {
+	for i := range Columns {
+		if column == Columns[i] {
+			return true
+		}
+	}
+	for i := range ForeignKeys {
+		if column == ForeignKeys[i] {
+			return true
+		}
+	}
+	return false
+}
+
 var (
-	// DefaultSize holds the default value on creation for the size field.
+	// DefaultSize holds the default value on creation for the "size" field.
 	DefaultSize int
 	// SizeValidator is a validator for the "size" field. It is called by the builders before save.
 	SizeValidator func(int) error

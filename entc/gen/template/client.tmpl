@@ -17,7 +17,7 @@ import (
 		"{{ $n.Config.Package }}/{{ $n.Package }}"
 	{{- end }}
 
-	"github.com/facebook/ent/dialect"
+	"entgo.io/ent/dialect"
 	{{ range $_, $import := $.Storage.Imports -}}
 		"{{ $import }}"
 	{{ end -}}
@@ -34,7 +34,12 @@ type Client struct {
 		// {{ $n.Name }} is the client for interacting with the {{ $n.Name }} builders.
 		{{ $n.Name }} *{{ $n.Name }}Client
 	{{- end }}
-	{{ template "client/fields/additional" $ }}
+	{{- template "client/fields/additional" $ }}
+	{{- with $tmpls := matchTemplate "client/fields/additional/*" }}
+		{{- range $tmpl := $tmpls }}
+			{{- xtemplate $tmpl $ }}
+		{{- end }}
+	{{- end }}
 }
 
 // NewClient creates a new client configured with the given options.
@@ -76,9 +81,10 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	}
 	tx, err := newTx(ctx, c.driver)
 	if err != nil {
-		return nil, fmt.Errorf("{{ $pkg }}: starting a transaction: %v", err)
+		return nil, fmt.Errorf("{{ $pkg }}: starting a transaction: %w", err)
 	}
-	cfg := config{driver: tx, log: c.log, debug: c.debug, hooks: c.hooks}
+	cfg := c.config
+	cfg.driver = tx
 	return &Tx{
 		ctx: ctx,
 		config: cfg,
@@ -105,7 +111,8 @@ func (c *Client) Debug() *Client {
 	if c.debug {
 		return c
 	}
-	cfg := config{driver: dialect.Debug(c.driver, c.log), log: c.log, debug: true, hooks: c.hooks}
+	cfg := c.config
+	cfg.driver = dialect.Debug(c.driver, c.log)
 	client := &Client{config: cfg}
 	client.init()
 	return client
@@ -125,7 +132,7 @@ func (c *Client) Use(hooks ...Hook) {
 }
 
 
-{{ range $_, $n := $.Nodes }}
+{{ range $n := $.Nodes }}
 {{ $client := print $n.Name "Client" }}
 // {{ $client }} is a client for the {{ $n.Name }} schema.
 type {{ $client }} struct {
@@ -151,7 +158,7 @@ func (c *{{ $client }}) Create() *{{ $n.CreateName }} {
 	return &{{ $n.CreateName }}{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
-// BulkCreate returns a builder for creating a bulk of {{ $n.Name }} entities.
+// CreateBulk returns a builder for creating a bulk of {{ $n.Name }} entities.
 func (c *{{ $client }}) CreateBulk(builders ...*{{ $n.CreateName }}) *{{ $n.CreateBulkName }} {
 	return &{{ $n.CreateBulkName }}{config: c.config, builders: builders}
 }
@@ -205,20 +212,21 @@ func (c *{{ $client }}) Get(ctx context.Context, id {{ $n.ID.Type }}) (*{{ $n.Na
 
 // GetX is like Get, but panics if an error occurs.
 func (c *{{ $client }}) GetX(ctx context.Context, id {{ $n.ID.Type }}) *{{ $n.Name }} {
-	{{ $rec }}, err := c.Get(ctx, id)
+	obj, err := c.Get(ctx, id)
 	if err != nil {
 		panic(err)
 	}
-	return {{ $rec }}
+	return obj
 }
 
-{{ range $_, $e := $n.Edges }}
+{{ range $e := $n.Edges }}
 {{ $builder := $e.Type.QueryName }}
+{{ $arg := $rec }}{{ if eq $arg "id" }}{{ $arg = "node" }}{{ end }}
 // Query{{ pascal $e.Name }} queries the {{ $e.Name }} edge of a {{ $n.Name }}.
-func (c *{{ $client }}) Query{{ pascal $e.Name }}({{ $rec }} *{{ $n.Name }}) *{{ $builder }} {
+func (c *{{ $client }}) Query{{ pascal $e.Name }}({{ $arg }} *{{ $n.Name }}) *{{ $builder }} {
 	query := &{{ $builder }}{config: c.config}
 	query.path = func(ctx context.Context) (fromV {{ $.Storage.Builder }}, _ error) {
-		{{- with extend $n "Receiver" $rec "Edge" $e "Ident" "fromV" }}
+		{{- with extend $n "Receiver" $arg "Edge" $e "Ident" "fromV" }}
 			{{ $tmpl := printf "dialect/%s/query/from" $.Storage }}
 			{{- xtemplate $tmpl . -}}
 		{{- end -}}
@@ -230,7 +238,7 @@ func (c *{{ $client }}) Query{{ pascal $e.Name }}({{ $rec }} *{{ $n.Name }}) *{{
 
 // Hooks returns the client hooks.
 func (c *{{ $client }}) Hooks() []Hook {
-	{{- if or $n.NumHooks $n.HasPolicy }}
+	{{- if or $n.NumHooks $n.NumPolicy }}
 		hooks := c.hooks.{{ $n.Name }}
 		return append(hooks[:len(hooks):len(hooks)], {{ $n.Package }}.Hooks[:]...)
 	{{- else }}

@@ -25,6 +25,8 @@ const (
 	FieldLast = "last"
 	// FieldNickname holds the string denoting the nickname field in the database.
 	FieldNickname = "nickname"
+	// FieldAddress holds the string denoting the address field in the database.
+	FieldAddress = "address"
 	// FieldPhone holds the string denoting the phone field in the database.
 	FieldPhone = "phone"
 	// FieldPassword holds the string denoting the password field in the database.
@@ -33,7 +35,6 @@ const (
 	FieldRole = "role"
 	// FieldSSOCert holds the string denoting the ssocert field in the database.
 	FieldSSOCert = "sso_cert"
-
 	// EdgeCard holds the string denoting the card edge name in mutations.
 	EdgeCard = "card"
 	// EdgePets holds the string denoting the pets edge name in mutations.
@@ -56,7 +57,6 @@ const (
 	EdgeChildren = "children"
 	// EdgeParent holds the string denoting the parent edge name in mutations.
 	EdgeParent = "parent"
-
 	// CardLabel holds the string label denoting the card edge type in the database.
 	CardLabel = "user_card"
 	// PetsLabel holds the string label denoting the pets edge type in the database.
@@ -84,21 +84,23 @@ const (
 var (
 	// OptionalIntValidator is a validator for the "optional_int" field. It is called by the builders before save.
 	OptionalIntValidator func(int) error
-	// DefaultLast holds the default value on creation for the last field.
+	// DefaultLast holds the default value on creation for the "last" field.
 	DefaultLast string
+	// DefaultAddress holds the default value on creation for the "address" field.
+	DefaultAddress func() string
 )
 
-// Role defines the type for the role enum field.
+// Role defines the type for the "role" enum field.
 type Role string
 
-// RoleUser is the default Role.
+// RoleUser is the default value of the Role enum.
 const DefaultRole = RoleUser
 
 // Role values.
 const (
+	RoleUser     Role = "user"
 	RoleAdmin    Role = "admin"
 	RoleFreeUser Role = "free-user"
-	RoleUser     Role = "user"
 )
 
 func (r Role) String() string {
@@ -108,7 +110,7 @@ func (r Role) String() string {
 // RoleValidator is a validator for the "role" field enum values. It is called by the builders before save.
 func RoleValidator(r Role) error {
 	switch r {
-	case RoleAdmin, RoleFreeUser, RoleUser:
+	case RoleUser, RoleAdmin, RoleFreeUser:
 		return nil
 	default:
 		return fmt.Errorf("user: invalid enum value for role field: %q", r)

@@ -21,10 +21,8 @@ const (
 	FieldType = "type"
 	// FieldState holds the string denoting the state field in the database.
 	FieldState = "state"
-
 	// EdgeFiles holds the string denoting the files edge name in mutations.
 	EdgeFiles = "files"
-
 	// Table holds the table name of the filetype in the database.
 	Table = "file_types"
 	// FilesTable is the table the holds the files relation/edge.
@@ -44,17 +42,27 @@ var Columns = []string{
 	FieldState,
 }
 
-// Type defines the type for the type enum field.
+// ValidColumn reports if the column name is valid (part of the table columns).
+func ValidColumn(column string) bool {
+	for i := range Columns {
+		if column == Columns[i] {
+			return true
+		}
+	}
+	return false
+}
+
+// Type defines the type for the "type" enum field.
 type Type string
 
-// TypePNG is the default Type.
+// TypePNG is the default value of the Type enum.
 const DefaultType = TypePNG
 
 // Type values.
 const (
-	TypeJPG Type = "jpg"
 	TypePNG Type = "png"
 	TypeSVG Type = "svg"
+	TypeJPG Type = "jpg"
 )
 
 func (_type Type) String() string {
@@ -64,23 +72,23 @@ func (_type Type) String() string {
 // TypeValidator is a validator for the "type" field enum values. It is called by the builders before save.
 func TypeValidator(_type Type) error {
 	switch _type {
-	case TypeJPG, TypePNG, TypeSVG:
+	case TypePNG, TypeSVG, TypeJPG:
 		return nil
 	default:
 		return fmt.Errorf("filetype: invalid enum value for type field: %q", _type)
 	}
 }
 
-// State defines the type for the state enum field.
+// State defines the type for the "state" enum field.
 type State string
 
-// StateOn is the default State.
+// StateOn is the default value of the State enum.
 const DefaultState = StateOn
 
 // State values.
 const (
-	StateOff State = "OFF"
 	StateOn  State = "ON"
+	StateOff State = "OFF"
 )
 
 func (s State) String() string {
@@ -90,7 +98,7 @@ func (s State) String() string {
 // StateValidator is a validator for the "state" field enum values. It is called by the builders before save.
 func StateValidator(s State) error {
 	switch s {
-	case StateOff, StateOn:
+	case StateOn, StateOff:
 		return nil
 	default:
 		return fmt.Errorf("filetype: invalid enum value for state field: %q", s)

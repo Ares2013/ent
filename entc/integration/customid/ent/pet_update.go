@@ -10,36 +10,35 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/facebook/ent/dialect/sql"
-	"github.com/facebook/ent/dialect/sql/sqlgraph"
-	"github.com/facebook/ent/entc/integration/customid/ent/car"
-	"github.com/facebook/ent/entc/integration/customid/ent/pet"
-	"github.com/facebook/ent/entc/integration/customid/ent/predicate"
-	"github.com/facebook/ent/entc/integration/customid/ent/user"
-	"github.com/facebook/ent/schema/field"
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/entc/integration/customid/ent/car"
+	"entgo.io/ent/entc/integration/customid/ent/pet"
+	"entgo.io/ent/entc/integration/customid/ent/predicate"
+	"entgo.io/ent/entc/integration/customid/ent/user"
+	"entgo.io/ent/schema/field"
 )
 
 // PetUpdate is the builder for updating Pet entities.
 type PetUpdate struct {
 	config
-	hooks      []Hook
-	mutation   *PetMutation
-	predicates []predicate.Pet
+	hooks    []Hook
+	mutation *PetMutation
 }
 
-// Where adds a new predicate for the builder.
+// Where adds a new predicate for the PetUpdate builder.
 func (pu *PetUpdate) Where(ps ...predicate.Pet) *PetUpdate {
-	pu.predicates = append(pu.predicates, ps...)
+	pu.mutation.predicates = append(pu.mutation.predicates, ps...)
 	return pu
 }
 
-// SetOwnerID sets the owner edge to User by id.
+// SetOwnerID sets the "owner" edge to the User entity by ID.
 func (pu *PetUpdate) SetOwnerID(id int) *PetUpdate {
 	pu.mutation.SetOwnerID(id)
 	return pu
 }
 
-// SetNillableOwnerID sets the owner edge to User by id if the given value is not nil.
+// SetNillableOwnerID sets the "owner" edge to the User entity by ID if the given value is not nil.
 func (pu *PetUpdate) SetNillableOwnerID(id *int) *PetUpdate {
 	if id != nil {
 		pu = pu.SetOwnerID(*id)
@@ -47,18 +46,18 @@ func (pu *PetUpdate) SetNillableOwnerID(id *int) *PetUpdate {
 	return pu
 }
 
-// SetOwner sets the owner edge to User.
+// SetOwner sets the "owner" edge to the User entity.
 func (pu *PetUpdate) SetOwner(u *User) *PetUpdate {
 	return pu.SetOwnerID(u.ID)
 }
 
-// AddCarIDs adds the cars edge to Car by ids.
+// AddCarIDs adds the "cars" edge to the Car entity by IDs.
 func (pu *PetUpdate) AddCarIDs(ids ...int) *PetUpdate {
 	pu.mutation.AddCarIDs(ids...)
 	return pu
 }
 
-// AddCars adds the cars edges to Car.
+// AddCars adds the "cars" edges to the Car entity.
 func (pu *PetUpdate) AddCars(c ...*Car) *PetUpdate {
 	ids := make([]int, len(c))
 	for i := range c {
@@ -67,13 +66,13 @@ func (pu *PetUpdate) AddCars(c ...*Car) *PetUpdate {
 	return pu.AddCarIDs(ids...)
 }
 
-// AddFriendIDs adds the friends edge to Pet by ids.
+// AddFriendIDs adds the "friends" edge to the Pet entity by IDs.
 func (pu *PetUpdate) AddFriendIDs(ids ...string) *PetUpdate {
 	pu.mutation.AddFriendIDs(ids...)
 	return pu
 }
 
-// AddFriends adds the friends edges to Pet.
+// AddFriends adds the "friends" edges to the Pet entity.
 func (pu *PetUpdate) AddFriends(p ...*Pet) *PetUpdate {
 	ids := make([]string, len(p))
 	for i := range p {
@@ -82,13 +81,13 @@ func (pu *PetUpdate) AddFriends(p ...*Pet) *PetUpdate {
 	return pu.AddFriendIDs(ids...)
 }
 
-// SetBestFriendID sets the best_friend edge to Pet by id.
+// SetBestFriendID sets the "best_friend" edge to the Pet entity by ID.
 func (pu *PetUpdate) SetBestFriendID(id string) *PetUpdate {
 	pu.mutation.SetBestFriendID(id)
 	return pu
 }
 
-// SetNillableBestFriendID sets the best_friend edge to Pet by id if the given value is not nil.
+// SetNillableBestFriendID sets the "best_friend" edge to the Pet entity by ID if the given value is not nil.
 func (pu *PetUpdate) SetNillableBestFriendID(id *string) *PetUpdate {
 	if id != nil {
 		pu = pu.SetBestFriendID(*id)
@@ -96,7 +95,7 @@ func (pu *PetUpdate) SetNillableBestFriendID(id *string) *PetUpdate {
 	return pu
 }
 
-// SetBestFriend sets the best_friend edge to Pet.
+// SetBestFriend sets the "best_friend" edge to the Pet entity.
 func (pu *PetUpdate) SetBestFriend(p *Pet) *PetUpdate {
 	return pu.SetBestFriendID(p.ID)
 }
@@ -106,19 +105,25 @@ func (pu *PetUpdate) Mutation() *PetMutation {
 	return pu.mutation
 }
 
-// ClearOwner clears the owner edge to User.
+// ClearOwner clears the "owner" edge to the User entity.
 func (pu *PetUpdate) ClearOwner() *PetUpdate {
 	pu.mutation.ClearOwner()
 	return pu
 }
 
-// RemoveCarIDs removes the cars edge to Car by ids.
+// ClearCars clears all "cars" edges to the Car entity.
+func (pu *PetUpdate) ClearCars() *PetUpdate {
+	pu.mutation.ClearCars()
+	return pu
+}
+
+// RemoveCarIDs removes the "cars" edge to Car entities by IDs.
 func (pu *PetUpdate) RemoveCarIDs(ids ...int) *PetUpdate {
 	pu.mutation.RemoveCarIDs(ids...)
 	return pu
 }
 
-// RemoveCars removes cars edges to Car.
+// RemoveCars removes "cars" edges to Car entities.
 func (pu *PetUpdate) RemoveCars(c ...*Car) *PetUpdate {
 	ids := make([]int, len(c))
 	for i := range c {
@@ -127,13 +132,19 @@ func (pu *PetUpdate) RemoveCars(c ...*Car) *PetUpdate {
 	return pu.RemoveCarIDs(ids...)
 }
 
-// RemoveFriendIDs removes the friends edge to Pet by ids.
+// ClearFriends clears all "friends" edges to the Pet entity.
+func (pu *PetUpdate) ClearFriends() *PetUpdate {
+	pu.mutation.ClearFriends()
+	return pu
+}
+
+// RemoveFriendIDs removes the "friends" edge to Pet entities by IDs.
 func (pu *PetUpdate) RemoveFriendIDs(ids ...string) *PetUpdate {
 	pu.mutation.RemoveFriendIDs(ids...)
 	return pu
 }
 
-// RemoveFriends removes friends edges to Pet.
+// RemoveFriends removes "friends" edges to Pet entities.
 func (pu *PetUpdate) RemoveFriends(p ...*Pet) *PetUpdate {
 	ids := make([]string, len(p))
 	for i := range p {
@@ -142,15 +153,14 @@ func (pu *PetUpdate) RemoveFriends(p ...*Pet) *PetUpdate {
 	return pu.RemoveFriendIDs(ids...)
 }
 
-// ClearBestFriend clears the best_friend edge to Pet.
+// ClearBestFriend clears the "best_friend" edge to the Pet entity.
 func (pu *PetUpdate) ClearBestFriend() *PetUpdate {
 	pu.mutation.ClearBestFriend()
 	return pu
 }
 
-// Save executes the query and returns the number of rows/vertices matched by this operation.
+// Save executes the query and returns the number of nodes affected by the update operation.
 func (pu *PetUpdate) Save(ctx context.Context) (int, error) {
-
 	var (
 		err      error
 		affected int
@@ -211,7 +221,7 @@ func (pu *PetUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			},
 		},
 	}
-	if ps := pu.predicates; len(ps) > 0 {
+	if ps := pu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
@@ -253,7 +263,23 @@ func (pu *PetUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if nodes := pu.mutation.RemovedCarsIDs(); len(nodes) > 0 {
+	if pu.mutation.CarsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   pet.CarsTable,
+			Columns: []string{pet.CarsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: car.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := pu.mutation.RemovedCarsIDs(); len(nodes) > 0 && !pu.mutation.CarsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -291,7 +317,23 @@ func (pu *PetUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if nodes := pu.mutation.RemovedFriendsIDs(); len(nodes) > 0 {
+	if pu.mutation.FriendsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   pet.FriendsTable,
+			Columns: pet.FriendsPrimaryKey,
+			Bidi:    true,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeString,
+					Column: pet.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := pu.mutation.RemovedFriendsIDs(); len(nodes) > 0 && !pu.mutation.FriendsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: false,
@@ -378,17 +420,18 @@ func (pu *PetUpdate) sqlSave(ctx context.Context) (n int, err error) {
 // PetUpdateOne is the builder for updating a single Pet entity.
 type PetUpdateOne struct {
 	config
+	fields   []string
 	hooks    []Hook
 	mutation *PetMutation
 }
 
-// SetOwnerID sets the owner edge to User by id.
+// SetOwnerID sets the "owner" edge to the User entity by ID.
 func (puo *PetUpdateOne) SetOwnerID(id int) *PetUpdateOne {
 	puo.mutation.SetOwnerID(id)
 	return puo
 }
 
-// SetNillableOwnerID sets the owner edge to User by id if the given value is not nil.
+// SetNillableOwnerID sets the "owner" edge to the User entity by ID if the given value is not nil.
 func (puo *PetUpdateOne) SetNillableOwnerID(id *int) *PetUpdateOne {
 	if id != nil {
 		puo = puo.SetOwnerID(*id)
@@ -396,18 +439,18 @@ func (puo *PetUpdateOne) SetNillableOwnerID(id *int) *PetUpdateOne {
 	return puo
 }
 
-// SetOwner sets the owner edge to User.
+// SetOwner sets the "owner" edge to the User entity.
 func (puo *PetUpdateOne) SetOwner(u *User) *PetUpdateOne {
 	return puo.SetOwnerID(u.ID)
 }
 
-// AddCarIDs adds the cars edge to Car by ids.
+// AddCarIDs adds the "cars" edge to the Car entity by IDs.
 func (puo *PetUpdateOne) AddCarIDs(ids ...int) *PetUpdateOne {
 	puo.mutation.AddCarIDs(ids...)
 	return puo
 }
 
-// AddCars adds the cars edges to Car.
+// AddCars adds the "cars" edges to the Car entity.
 func (puo *PetUpdateOne) AddCars(c ...*Car) *PetUpdateOne {
 	ids := make([]int, len(c))
 	for i := range c {
@@ -416,13 +459,13 @@ func (puo *PetUpdateOne) AddCars(c ...*Car) *PetUpdateOne {
 	return puo.AddCarIDs(ids...)
 }
 
-// AddFriendIDs adds the friends edge to Pet by ids.
+// AddFriendIDs adds the "friends" edge to the Pet entity by IDs.
 func (puo *PetUpdateOne) AddFriendIDs(ids ...string) *PetUpdateOne {
 	puo.mutation.AddFriendIDs(ids...)
 	return puo
 }
 
-// AddFriends adds the friends edges to Pet.
+// AddFriends adds the "friends" edges to the Pet entity.
 func (puo *PetUpdateOne) AddFriends(p ...*Pet) *PetUpdateOne {
 	ids := make([]string, len(p))
 	for i := range p {
@@ -431,13 +474,13 @@ func (puo *PetUpdateOne) AddFriends(p ...*Pet) *PetUpdateOne {
 	return puo.AddFriendIDs(ids...)
 }
 
-// SetBestFriendID sets the best_friend edge to Pet by id.
+// SetBestFriendID sets the "best_friend" edge to the Pet entity by ID.
 func (puo *PetUpdateOne) SetBestFriendID(id string) *PetUpdateOne {
 	puo.mutation.SetBestFriendID(id)
 	return puo
 }
 
-// SetNillableBestFriendID sets the best_friend edge to Pet by id if the given value is not nil.
+// SetNillableBestFriendID sets the "best_friend" edge to the Pet entity by ID if the given value is not nil.
 func (puo *PetUpdateOne) SetNillableBestFriendID(id *string) *PetUpdateOne {
 	if id != nil {
 		puo = puo.SetBestFriendID(*id)
@@ -445,7 +488,7 @@ func (puo *PetUpdateOne) SetNillableBestFriendID(id *string) *PetUpdateOne {
 	return puo
 }
 
-// SetBestFriend sets the best_friend edge to Pet.
+// SetBestFriend sets the "best_friend" edge to the Pet entity.
 func (puo *PetUpdateOne) SetBestFriend(p *Pet) *PetUpdateOne {
 	return puo.SetBestFriendID(p.ID)
 }
@@ -455,19 +498,25 @@ func (puo *PetUpdateOne) Mutation() *PetMutation {
 	return puo.mutation
 }
 
-// ClearOwner clears the owner edge to User.
+// ClearOwner clears the "owner" edge to the User entity.
 func (puo *PetUpdateOne) ClearOwner() *PetUpdateOne {
 	puo.mutation.ClearOwner()
 	return puo
 }
 
-// RemoveCarIDs removes the cars edge to Car by ids.
+// ClearCars clears all "cars" edges to the Car entity.
+func (puo *PetUpdateOne) ClearCars() *PetUpdateOne {
+	puo.mutation.ClearCars()
+	return puo
+}
+
+// RemoveCarIDs removes the "cars" edge to Car entities by IDs.
 func (puo *PetUpdateOne) RemoveCarIDs(ids ...int) *PetUpdateOne {
 	puo.mutation.RemoveCarIDs(ids...)
 	return puo
 }
 
-// RemoveCars removes cars edges to Car.
+// RemoveCars removes "cars" edges to Car entities.
 func (puo *PetUpdateOne) RemoveCars(c ...*Car) *PetUpdateOne {
 	ids := make([]int, len(c))
 	for i := range c {
@@ -476,13 +525,19 @@ func (puo *PetUpdateOne) RemoveCars(c ...*Car) *PetUpdateOne {
 	return puo.RemoveCarIDs(ids...)
 }
 
-// RemoveFriendIDs removes the friends edge to Pet by ids.
+// ClearFriends clears all "friends" edges to the Pet entity.
+func (puo *PetUpdateOne) ClearFriends() *PetUpdateOne {
+	puo.mutation.ClearFriends()
+	return puo
+}
+
+// RemoveFriendIDs removes the "friends" edge to Pet entities by IDs.
 func (puo *PetUpdateOne) RemoveFriendIDs(ids ...string) *PetUpdateOne {
 	puo.mutation.RemoveFriendIDs(ids...)
 	return puo
 }
 
-// RemoveFriends removes friends edges to Pet.
+// RemoveFriends removes "friends" edges to Pet entities.
 func (puo *PetUpdateOne) RemoveFriends(p ...*Pet) *PetUpdateOne {
 	ids := make([]string, len(p))
 	for i := range p {
@@ -491,15 +546,21 @@ func (puo *PetUpdateOne) RemoveFriends(p ...*Pet) *PetUpdateOne {
 	return puo.RemoveFriendIDs(ids...)
 }
 
-// ClearBestFriend clears the best_friend edge to Pet.
+// ClearBestFriend clears the "best_friend" edge to the Pet entity.
 func (puo *PetUpdateOne) ClearBestFriend() *PetUpdateOne {
 	puo.mutation.ClearBestFriend()
 	return puo
 }
 
-// Save executes the query and returns the updated entity.
-func (puo *PetUpdateOne) Save(ctx context.Context) (*Pet, error) {
+// Select allows selecting one or more fields (columns) of the returned entity.
+// The default is selecting all fields defined in the entity schema.
+func (puo *PetUpdateOne) Select(field string, fields ...string) *PetUpdateOne {
+	puo.fields = append([]string{field}, fields...)
+	return puo
+}
 
+// Save executes the query and returns the updated Pet entity.
+func (puo *PetUpdateOne) Save(ctx context.Context) (*Pet, error) {
 	var (
 		err  error
 		node *Pet
@@ -529,11 +590,11 @@ func (puo *PetUpdateOne) Save(ctx context.Context) (*Pet, error) {
 
 // SaveX is like Save, but panics if an error occurs.
 func (puo *PetUpdateOne) SaveX(ctx context.Context) *Pet {
-	pe, err := puo.Save(ctx)
+	node, err := puo.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
-	return pe
+	return node
 }
 
 // Exec executes the query on the entity.
@@ -549,7 +610,7 @@ func (puo *PetUpdateOne) ExecX(ctx context.Context) {
 	}
 }
 
-func (puo *PetUpdateOne) sqlSave(ctx context.Context) (pe *Pet, err error) {
+func (puo *PetUpdateOne) sqlSave(ctx context.Context) (_node *Pet, err error) {
 	_spec := &sqlgraph.UpdateSpec{
 		Node: &sqlgraph.NodeSpec{
 			Table:   pet.Table,
@@ -565,6 +626,25 @@ func (puo *PetUpdateOne) sqlSave(ctx context.Context) (pe *Pet, err error) {
 		return nil, &ValidationError{Name: "ID", err: fmt.Errorf("missing Pet.ID for update")}
 	}
 	_spec.Node.ID.Value = id
+	if fields := puo.fields; len(fields) > 0 {
+		_spec.Node.Columns = make([]string, 0, len(fields))
+		_spec.Node.Columns = append(_spec.Node.Columns, pet.FieldID)
+		for _, f := range fields {
+			if !pet.ValidColumn(f) {
+				return nil, &ValidationError{Name: f, err: fmt.Errorf("ent: invalid field %q for query", f)}
+			}
+			if f != pet.FieldID {
+				_spec.Node.Columns = append(_spec.Node.Columns, f)
+			}
+		}
+	}
+	if ps := puo.mutation.predicates; len(ps) > 0 {
+		_spec.Predicate = func(selector *sql.Selector) {
+			for i := range ps {
+				ps[i](selector)
+			}
+		}
+	}
 	if puo.mutation.OwnerCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -600,7 +680,23 @@ func (puo *PetUpdateOne) sqlSave(ctx context.Context) (pe *Pet, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if nodes := puo.mutation.RemovedCarsIDs(); len(nodes) > 0 {
+	if puo.mutation.CarsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   pet.CarsTable,
+			Columns: []string{pet.CarsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: car.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := puo.mutation.RemovedCarsIDs(); len(nodes) > 0 && !puo.mutation.CarsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -638,7 +734,23 @@ func (puo *PetUpdateOne) sqlSave(ctx context.Context) (pe *Pet, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if nodes := puo.mutation.RemovedFriendsIDs(); len(nodes) > 0 {
+	if puo.mutation.FriendsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   pet.FriendsTable,
+			Columns: pet.FriendsPrimaryKey,
+			Bidi:    true,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeString,
+					Column: pet.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := puo.mutation.RemovedFriendsIDs(); len(nodes) > 0 && !puo.mutation.FriendsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: false,
@@ -711,9 +823,9 @@ func (puo *PetUpdateOne) sqlSave(ctx context.Context) (pe *Pet, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	pe = &Pet{config: puo.config}
-	_spec.Assign = pe.assignValues
-	_spec.ScanValues = pe.scanValues()
+	_node = &Pet{config: puo.config}
+	_spec.Assign = _node.assignValues
+	_spec.ScanValues = _node.scanValues
 	if err = sqlgraph.UpdateNode(ctx, puo.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{pet.Label}
@@ -722,5 +834,5 @@ func (puo *PetUpdateOne) sqlSave(ctx context.Context) (pe *Pet, err error) {
 		}
 		return nil, err
 	}
-	return pe, nil
+	return _node, nil
 }

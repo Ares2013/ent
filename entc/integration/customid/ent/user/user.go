@@ -11,7 +11,6 @@ const (
 	Label = "user"
 	// FieldID holds the string denoting the id field in the database.
 	FieldID = "oid"
-
 	// EdgeGroups holds the string denoting the groups edge name in mutations.
 	EdgeGroups = "groups"
 	// EdgeParent holds the string denoting the parent edge name in mutations.
@@ -20,10 +19,9 @@ const (
 	EdgeChildren = "children"
 	// EdgePets holds the string denoting the pets edge name in mutations.
 	EdgePets = "pets"
-
-	// GroupFieldID holds the string denoting the id field of the Group.
+	// GroupFieldID holds the string denoting the ID field of the Group.
 	GroupFieldID = "id"
-	// PetFieldID holds the string denoting the id field of the Pet.
+	// PetFieldID holds the string denoting the ID field of the Pet.
 	PetFieldID = "id"
 	// Table holds the table name of the user in the database.
 	Table = "users"
@@ -54,7 +52,8 @@ var Columns = []string{
 	FieldID,
 }
 
-// ForeignKeys holds the SQL foreign-keys that are owned by the User type.
+// ForeignKeys holds the SQL foreign-keys that are owned by the "users"
+// table and are not defined as standalone fields in the schema.
 var ForeignKeys = []string{
 	"user_children",
 }
@@ -64,3 +63,18 @@ var (
 	// primary key for the groups relation (M2M).
 	GroupsPrimaryKey = []string{"group_id", "user_id"}
 )
+
+// ValidColumn reports if the column name is valid (part of the table columns).
+func ValidColumn(column string) bool {
+	for i := range Columns {
+		if column == Columns[i] {
+			return true
+		}
+	}
+	for i := range ForeignKeys {
+		if column == ForeignKeys[i] {
+			return true
+		}
+	}
+	return false
+}

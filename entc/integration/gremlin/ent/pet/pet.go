@@ -13,12 +13,12 @@ const (
 	FieldID = "id"
 	// FieldName holds the string denoting the name field in the database.
 	FieldName = "name"
-
+	// FieldUUID holds the string denoting the uuid field in the database.
+	FieldUUID = "uuid"
 	// EdgeTeam holds the string denoting the team edge name in mutations.
 	EdgeTeam = "team"
 	// EdgeOwner holds the string denoting the owner edge name in mutations.
 	EdgeOwner = "owner"
-
 	// TeamInverseLabel holds the string label denoting the team inverse edge type in the database.
 	TeamInverseLabel = "user_team"
 	// OwnerInverseLabel holds the string label denoting the owner inverse edge type in the database.

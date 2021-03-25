@@ -6,6 +6,7 @@ package sql
 
 import (
 	"database/sql"
+	"database/sql/driver"
 	"fmt"
 	"reflect"
 	"strings"
@@ -24,7 +25,7 @@ type ColumnScanner interface {
 func ScanOne(rows ColumnScanner, v interface{}) error {
 	columns, err := rows.Columns()
 	if err != nil {
-		return fmt.Errorf("sql/scan: failed getting column names: %v", err)
+		return fmt.Errorf("sql/scan: failed getting column names: %w", err)
 	}
 	if n := len(columns); n != 1 {
 		return fmt.Errorf("sql/scan: unexpected number of columns: %d", n)
@@ -71,13 +72,32 @@ func ScanString(rows ColumnScanner) (string, error) {
 	return s, nil
 }
 
+// ScanValue scans and returns a driver.Value from the rows columns.
+func ScanValue(rows ColumnScanner) (driver.Value, error) {
+	var v driver.Value
+	if err := ScanOne(rows, &v); err != nil {
+		return "", err
+	}
+	return v, nil
+}
+
 // ScanSlice scans the given ColumnScanner (basically, sql.Row or sql.Rows) into the given slice.
 func ScanSlice(rows ColumnScanner, v interface{}) error {
 	columns, err := rows.Columns()
 	if err != nil {
-		return fmt.Errorf("sql/scan: failed getting column names: %v", err)
+		return fmt.Errorf("sql/scan: failed getting column names: %w", err)
 	}
-	rv := reflect.Indirect(reflect.ValueOf(v))
+	rv := reflect.ValueOf(v)
+	switch {
+	case rv.Kind() != reflect.Ptr:
+		if t := reflect.TypeOf(v); t != nil {
+			return fmt.Errorf("sql/scan: ScanSlice(non-pointer %s)", t)
+		}
+		fallthrough
+	case rv.IsNil():
+		return fmt.Errorf("sql/scan: ScanSlice(nil)")
+	}
+	rv = reflect.Indirect(rv)
 	if k := rv.Kind(); k != reflect.Slice {
 		return fmt.Errorf("sql/scan: invalid type %s. expected slice as an argument", k)
 	}
@@ -91,7 +111,7 @@ func ScanSlice(rows ColumnScanner, v interface{}) error {
 	for rows.Next() {
 		values := scan.values()
 		if err := rows.Scan(values...); err != nil {
-			return fmt.Errorf("sql/scan: failed scanning rows: %v", err)
+			return fmt.Errorf("sql/scan: failed scanning rows: %w", err)
 		}
 		vv := reflect.Append(rv, scan.value(values...))
 		rv.Set(vv)
@@ -119,9 +139,7 @@ func (r *rowScan) values() []interface{} {
 // scanType returns rowScan for the given reflect.Type.
 func scanType(typ reflect.Type, columns []string) (*rowScan, error) {
 	switch k := typ.Kind(); {
-	case k == reflect.Interface && typ.NumMethod() == 0:
-		fallthrough // interface{}
-	case k == reflect.String || k >= reflect.Bool && k <= reflect.Float64:
+	case assignable(typ):
 		return &rowScan{
 			columns: []reflect.Type{typ},
 			value: func(v ...interface{}) reflect.Value {
@@ -137,15 +155,34 @@ func scanType(typ reflect.Type, columns []string) (*rowScan, error) {
 	}
 }
 
+var scannerType = reflect.TypeOf((*sql.Scanner)(nil)).Elem()
+
+// assignable reports if the given type can be assigned directly by `Rows.Scan`.
+func assignable(typ reflect.Type) bool {
+	switch k := typ.Kind(); {
+	case typ.Implements(scannerType):
+	case k == reflect.Interface && typ.NumMethod() == 0:
+	case k == reflect.String || k >= reflect.Bool && k <= reflect.Float64:
+	case (k == reflect.Slice || k == reflect.Array) && typ.Elem().Kind() == reflect.Uint8:
+	default:
+		return false
+	}
+	return true
+}
+
 // scanStruct returns the a configuration for scanning an sql.Row into a struct.
 func scanStruct(typ reflect.Type, columns []string) (*rowScan, error) {
 	var (
 		scan  = &rowScan{}
-		names = make(map[string]int)
 		idx   = make([]int, 0, typ.NumField())
+		names = make(map[string]int, typ.NumField())
 	)
 	for i := 0; i < typ.NumField(); i++ {
 		f := typ.Field(i)
+		// Skip unexported fields.
+		if f.PkgPath != "" {
+			continue
+		}
 		name := strings.ToLower(f.Name)
 		if tag, ok := f.Tag.Lookup("sql"); ok {
 			name = tag
@@ -155,7 +192,7 @@ func scanStruct(typ reflect.Type, columns []string) (*rowScan, error) {
 		names[name] = i
 	}
 	for _, c := range columns {
-		// normalize columns if necessary, for example: COUNT(*) => count.
+		// Normalize columns if necessary, for example: COUNT(*) => count.
 		name := strings.ToLower(strings.Split(c, "(")[0])
 		i, ok := names[name]
 		if !ok {

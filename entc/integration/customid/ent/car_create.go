@@ -11,10 +11,10 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/facebook/ent/dialect/sql/sqlgraph"
-	"github.com/facebook/ent/entc/integration/customid/ent/car"
-	"github.com/facebook/ent/entc/integration/customid/ent/pet"
-	"github.com/facebook/ent/schema/field"
+	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/entc/integration/customid/ent/car"
+	"entgo.io/ent/entc/integration/customid/ent/pet"
+	"entgo.io/ent/schema/field"
 )
 
 // CarCreate is the builder for creating a Car entity.
@@ -24,13 +24,13 @@ type CarCreate struct {
 	hooks    []Hook
 }
 
-// SetBeforeID sets the before_id field.
+// SetBeforeID sets the "before_id" field.
 func (cc *CarCreate) SetBeforeID(f float64) *CarCreate {
 	cc.mutation.SetBeforeID(f)
 	return cc
 }
 
-// SetNillableBeforeID sets the before_id field if the given value is not nil.
+// SetNillableBeforeID sets the "before_id" field if the given value is not nil.
 func (cc *CarCreate) SetNillableBeforeID(f *float64) *CarCreate {
 	if f != nil {
 		cc.SetBeforeID(*f)
@@ -38,13 +38,13 @@ func (cc *CarCreate) SetNillableBeforeID(f *float64) *CarCreate {
 	return cc
 }
 
-// SetAfterID sets the after_id field.
+// SetAfterID sets the "after_id" field.
 func (cc *CarCreate) SetAfterID(f float64) *CarCreate {
 	cc.mutation.SetAfterID(f)
 	return cc
 }
 
-// SetNillableAfterID sets the after_id field if the given value is not nil.
+// SetNillableAfterID sets the "after_id" field if the given value is not nil.
 func (cc *CarCreate) SetNillableAfterID(f *float64) *CarCreate {
 	if f != nil {
 		cc.SetAfterID(*f)
@@ -52,25 +52,25 @@ func (cc *CarCreate) SetNillableAfterID(f *float64) *CarCreate {
 	return cc
 }
 
-// SetModel sets the model field.
+// SetModel sets the "model" field.
 func (cc *CarCreate) SetModel(s string) *CarCreate {
 	cc.mutation.SetModel(s)
 	return cc
 }
 
-// SetID sets the id field.
+// SetID sets the "id" field.
 func (cc *CarCreate) SetID(i int) *CarCreate {
 	cc.mutation.SetID(i)
 	return cc
 }
 
-// SetOwnerID sets the owner edge to Pet by id.
+// SetOwnerID sets the "owner" edge to the Pet entity by ID.
 func (cc *CarCreate) SetOwnerID(id string) *CarCreate {
 	cc.mutation.SetOwnerID(id)
 	return cc
 }
 
-// SetNillableOwnerID sets the owner edge to Pet by id if the given value is not nil.
+// SetNillableOwnerID sets the "owner" edge to the Pet entity by ID if the given value is not nil.
 func (cc *CarCreate) SetNillableOwnerID(id *string) *CarCreate {
 	if id != nil {
 		cc = cc.SetOwnerID(*id)
@@ -78,7 +78,7 @@ func (cc *CarCreate) SetNillableOwnerID(id *string) *CarCreate {
 	return cc
 }
 
-// SetOwner sets the owner edge to Pet.
+// SetOwner sets the "owner" edge to the Pet entity.
 func (cc *CarCreate) SetOwner(p *Pet) *CarCreate {
 	return cc.SetOwnerID(p.ID)
 }
@@ -90,20 +90,23 @@ func (cc *CarCreate) Mutation() *CarMutation {
 
 // Save creates the Car in the database.
 func (cc *CarCreate) Save(ctx context.Context) (*Car, error) {
-	if err := cc.preSave(); err != nil {
-		return nil, err
-	}
 	var (
 		err  error
 		node *Car
 	)
 	if len(cc.hooks) == 0 {
+		if err = cc.check(); err != nil {
+			return nil, err
+		}
 		node, err = cc.sqlSave(ctx)
 	} else {
 		var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 			mutation, ok := m.(*CarMutation)
 			if !ok {
 				return nil, fmt.Errorf("unexpected mutation type %T", m)
+			}
+			if err = cc.check(); err != nil {
+				return nil, err
 			}
 			cc.mutation = mutation
 			node, err = cc.sqlSave(ctx)
@@ -129,7 +132,8 @@ func (cc *CarCreate) SaveX(ctx context.Context) *Car {
 	return v
 }
 
-func (cc *CarCreate) preSave() error {
+// check runs all checks and user-defined validators on the builder.
+func (cc *CarCreate) check() error {
 	if v, ok := cc.mutation.BeforeID(); ok {
 		if err := car.BeforeIDValidator(v); err != nil {
 			return &ValidationError{Name: "before_id", err: fmt.Errorf("ent: validator failed for field \"before_id\": %w", err)}
@@ -152,23 +156,23 @@ func (cc *CarCreate) preSave() error {
 }
 
 func (cc *CarCreate) sqlSave(ctx context.Context) (*Car, error) {
-	c, _spec := cc.createSpec()
+	_node, _spec := cc.createSpec()
 	if err := sqlgraph.CreateNode(ctx, cc.driver, _spec); err != nil {
 		if cerr, ok := isSQLConstraintError(err); ok {
 			err = cerr
 		}
 		return nil, err
 	}
-	if c.ID == 0 {
+	if _node.ID == 0 {
 		id := _spec.ID.Value.(int64)
-		c.ID = int(id)
+		_node.ID = int(id)
 	}
-	return c, nil
+	return _node, nil
 }
 
 func (cc *CarCreate) createSpec() (*Car, *sqlgraph.CreateSpec) {
 	var (
-		c     = &Car{config: cc.config}
+		_node = &Car{config: cc.config}
 		_spec = &sqlgraph.CreateSpec{
 			Table: car.Table,
 			ID: &sqlgraph.FieldSpec{
@@ -178,7 +182,7 @@ func (cc *CarCreate) createSpec() (*Car, *sqlgraph.CreateSpec) {
 		}
 	)
 	if id, ok := cc.mutation.ID(); ok {
-		c.ID = id
+		_node.ID = id
 		_spec.ID.Value = id
 	}
 	if value, ok := cc.mutation.BeforeID(); ok {
@@ -187,7 +191,7 @@ func (cc *CarCreate) createSpec() (*Car, *sqlgraph.CreateSpec) {
 			Value:  value,
 			Column: car.FieldBeforeID,
 		})
-		c.BeforeID = value
+		_node.BeforeID = value
 	}
 	if value, ok := cc.mutation.AfterID(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
@@ -195,7 +199,7 @@ func (cc *CarCreate) createSpec() (*Car, *sqlgraph.CreateSpec) {
 			Value:  value,
 			Column: car.FieldAfterID,
 		})
-		c.AfterID = value
+		_node.AfterID = value
 	}
 	if value, ok := cc.mutation.Model(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
@@ -203,7 +207,7 @@ func (cc *CarCreate) createSpec() (*Car, *sqlgraph.CreateSpec) {
 			Value:  value,
 			Column: car.FieldModel,
 		})
-		c.Model = value
+		_node.Model = value
 	}
 	if nodes := cc.mutation.OwnerIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -222,12 +226,13 @@ func (cc *CarCreate) createSpec() (*Car, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
+		_node.pet_cars = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	return c, _spec
+	return _node, _spec
 }
 
-// CarCreateBulk is the builder for creating a bulk of Car entities.
+// CarCreateBulk is the builder for creating many Car entities in bulk.
 type CarCreateBulk struct {
 	config
 	builders []*CarCreate
@@ -242,12 +247,12 @@ func (ccb *CarCreateBulk) Save(ctx context.Context) ([]*Car, error) {
 		func(i int, root context.Context) {
 			builder := ccb.builders[i]
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
-				if err := builder.preSave(); err != nil {
-					return nil, err
-				}
 				mutation, ok := m.(*CarMutation)
 				if !ok {
 					return nil, fmt.Errorf("unexpected mutation type %T", m)
+				}
+				if err := builder.check(); err != nil {
+					return nil, err
 				}
 				builder.mutation = mutation
 				nodes[i], specs[i] = builder.createSpec()
@@ -286,7 +291,7 @@ func (ccb *CarCreateBulk) Save(ctx context.Context) ([]*Car, error) {
 	return nodes, nil
 }
 
-// SaveX calls Save and panics if Save returns an error.
+// SaveX is like Save, but panics if an error occurs.
 func (ccb *CarCreateBulk) SaveX(ctx context.Context) []*Car {
 	v, err := ccb.Save(ctx)
 	if err != nil {

@@ -10,25 +10,24 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/facebook/ent/dialect/gremlin"
-	"github.com/facebook/ent/dialect/gremlin/graph/dsl"
-	"github.com/facebook/ent/dialect/gremlin/graph/dsl/__"
-	"github.com/facebook/ent/dialect/gremlin/graph/dsl/g"
-	"github.com/facebook/ent/entc/integration/gremlin/ent/comment"
-	"github.com/facebook/ent/entc/integration/gremlin/ent/predicate"
+	"entgo.io/ent/dialect/gremlin"
+	"entgo.io/ent/dialect/gremlin/graph/dsl"
+	"entgo.io/ent/dialect/gremlin/graph/dsl/__"
+	"entgo.io/ent/dialect/gremlin/graph/dsl/g"
+	"entgo.io/ent/entc/integration/gremlin/ent/comment"
+	"entgo.io/ent/entc/integration/gremlin/ent/predicate"
 )
 
 // CommentDelete is the builder for deleting a Comment entity.
 type CommentDelete struct {
 	config
-	hooks      []Hook
-	mutation   *CommentMutation
-	predicates []predicate.Comment
+	hooks    []Hook
+	mutation *CommentMutation
 }
 
-// Where adds a new predicate to the delete builder.
+// Where adds a new predicate to the CommentDelete builder.
 func (cd *CommentDelete) Where(ps ...predicate.Comment) *CommentDelete {
-	cd.predicates = append(cd.predicates, ps...)
+	cd.mutation.predicates = append(cd.mutation.predicates, ps...)
 	return cd
 }
 
@@ -81,7 +80,7 @@ func (cd *CommentDelete) gremlinExec(ctx context.Context) (int, error) {
 
 func (cd *CommentDelete) gremlin() *dsl.Traversal {
 	t := g.V().HasLabel(comment.Label)
-	for _, p := range cd.predicates {
+	for _, p := range cd.mutation.predicates {
 		p(t)
 	}
 	return t.SideEffect(__.Drop()).Count()

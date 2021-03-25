@@ -10,11 +10,11 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/facebook/ent/dialect/sql/sqlgraph"
-	"github.com/facebook/ent/entc/integration/customid/ent/car"
-	"github.com/facebook/ent/entc/integration/customid/ent/pet"
-	"github.com/facebook/ent/entc/integration/customid/ent/user"
-	"github.com/facebook/ent/schema/field"
+	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/entc/integration/customid/ent/car"
+	"entgo.io/ent/entc/integration/customid/ent/pet"
+	"entgo.io/ent/entc/integration/customid/ent/user"
+	"entgo.io/ent/schema/field"
 )
 
 // PetCreate is the builder for creating a Pet entity.
@@ -24,19 +24,27 @@ type PetCreate struct {
 	hooks    []Hook
 }
 
-// SetID sets the id field.
+// SetID sets the "id" field.
 func (pc *PetCreate) SetID(s string) *PetCreate {
 	pc.mutation.SetID(s)
 	return pc
 }
 
-// SetOwnerID sets the owner edge to User by id.
+// SetNillableID sets the "id" field if the given value is not nil.
+func (pc *PetCreate) SetNillableID(s *string) *PetCreate {
+	if s != nil {
+		pc.SetID(*s)
+	}
+	return pc
+}
+
+// SetOwnerID sets the "owner" edge to the User entity by ID.
 func (pc *PetCreate) SetOwnerID(id int) *PetCreate {
 	pc.mutation.SetOwnerID(id)
 	return pc
 }
 
-// SetNillableOwnerID sets the owner edge to User by id if the given value is not nil.
+// SetNillableOwnerID sets the "owner" edge to the User entity by ID if the given value is not nil.
 func (pc *PetCreate) SetNillableOwnerID(id *int) *PetCreate {
 	if id != nil {
 		pc = pc.SetOwnerID(*id)
@@ -44,18 +52,18 @@ func (pc *PetCreate) SetNillableOwnerID(id *int) *PetCreate {
 	return pc
 }
 
-// SetOwner sets the owner edge to User.
+// SetOwner sets the "owner" edge to the User entity.
 func (pc *PetCreate) SetOwner(u *User) *PetCreate {
 	return pc.SetOwnerID(u.ID)
 }
 
-// AddCarIDs adds the cars edge to Car by ids.
+// AddCarIDs adds the "cars" edge to the Car entity by IDs.
 func (pc *PetCreate) AddCarIDs(ids ...int) *PetCreate {
 	pc.mutation.AddCarIDs(ids...)
 	return pc
 }
 
-// AddCars adds the cars edges to Car.
+// AddCars adds the "cars" edges to the Car entity.
 func (pc *PetCreate) AddCars(c ...*Car) *PetCreate {
 	ids := make([]int, len(c))
 	for i := range c {
@@ -64,13 +72,13 @@ func (pc *PetCreate) AddCars(c ...*Car) *PetCreate {
 	return pc.AddCarIDs(ids...)
 }
 
-// AddFriendIDs adds the friends edge to Pet by ids.
+// AddFriendIDs adds the "friends" edge to the Pet entity by IDs.
 func (pc *PetCreate) AddFriendIDs(ids ...string) *PetCreate {
 	pc.mutation.AddFriendIDs(ids...)
 	return pc
 }
 
-// AddFriends adds the friends edges to Pet.
+// AddFriends adds the "friends" edges to the Pet entity.
 func (pc *PetCreate) AddFriends(p ...*Pet) *PetCreate {
 	ids := make([]string, len(p))
 	for i := range p {
@@ -79,13 +87,13 @@ func (pc *PetCreate) AddFriends(p ...*Pet) *PetCreate {
 	return pc.AddFriendIDs(ids...)
 }
 
-// SetBestFriendID sets the best_friend edge to Pet by id.
+// SetBestFriendID sets the "best_friend" edge to the Pet entity by ID.
 func (pc *PetCreate) SetBestFriendID(id string) *PetCreate {
 	pc.mutation.SetBestFriendID(id)
 	return pc
 }
 
-// SetNillableBestFriendID sets the best_friend edge to Pet by id if the given value is not nil.
+// SetNillableBestFriendID sets the "best_friend" edge to the Pet entity by ID if the given value is not nil.
 func (pc *PetCreate) SetNillableBestFriendID(id *string) *PetCreate {
 	if id != nil {
 		pc = pc.SetBestFriendID(*id)
@@ -93,7 +101,7 @@ func (pc *PetCreate) SetNillableBestFriendID(id *string) *PetCreate {
 	return pc
 }
 
-// SetBestFriend sets the best_friend edge to Pet.
+// SetBestFriend sets the "best_friend" edge to the Pet entity.
 func (pc *PetCreate) SetBestFriend(p *Pet) *PetCreate {
 	return pc.SetBestFriendID(p.ID)
 }
@@ -105,20 +113,24 @@ func (pc *PetCreate) Mutation() *PetMutation {
 
 // Save creates the Pet in the database.
 func (pc *PetCreate) Save(ctx context.Context) (*Pet, error) {
-	if err := pc.preSave(); err != nil {
-		return nil, err
-	}
 	var (
 		err  error
 		node *Pet
 	)
+	pc.defaults()
 	if len(pc.hooks) == 0 {
+		if err = pc.check(); err != nil {
+			return nil, err
+		}
 		node, err = pc.sqlSave(ctx)
 	} else {
 		var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 			mutation, ok := m.(*PetMutation)
 			if !ok {
 				return nil, fmt.Errorf("unexpected mutation type %T", m)
+			}
+			if err = pc.check(); err != nil {
+				return nil, err
 			}
 			pc.mutation = mutation
 			node, err = pc.sqlSave(ctx)
@@ -144,7 +156,16 @@ func (pc *PetCreate) SaveX(ctx context.Context) *Pet {
 	return v
 }
 
-func (pc *PetCreate) preSave() error {
+// defaults sets the default values of the builder before save.
+func (pc *PetCreate) defaults() {
+	if _, ok := pc.mutation.ID(); !ok {
+		v := pet.DefaultID()
+		pc.mutation.SetID(v)
+	}
+}
+
+// check runs all checks and user-defined validators on the builder.
+func (pc *PetCreate) check() error {
 	if v, ok := pc.mutation.ID(); ok {
 		if err := pet.IDValidator(v); err != nil {
 			return &ValidationError{Name: "id", err: fmt.Errorf("ent: validator failed for field \"id\": %w", err)}
@@ -154,19 +175,19 @@ func (pc *PetCreate) preSave() error {
 }
 
 func (pc *PetCreate) sqlSave(ctx context.Context) (*Pet, error) {
-	pe, _spec := pc.createSpec()
+	_node, _spec := pc.createSpec()
 	if err := sqlgraph.CreateNode(ctx, pc.driver, _spec); err != nil {
 		if cerr, ok := isSQLConstraintError(err); ok {
 			err = cerr
 		}
 		return nil, err
 	}
-	return pe, nil
+	return _node, nil
 }
 
 func (pc *PetCreate) createSpec() (*Pet, *sqlgraph.CreateSpec) {
 	var (
-		pe    = &Pet{config: pc.config}
+		_node = &Pet{config: pc.config}
 		_spec = &sqlgraph.CreateSpec{
 			Table: pet.Table,
 			ID: &sqlgraph.FieldSpec{
@@ -176,7 +197,7 @@ func (pc *PetCreate) createSpec() (*Pet, *sqlgraph.CreateSpec) {
 		}
 	)
 	if id, ok := pc.mutation.ID(); ok {
-		pe.ID = id
+		_node.ID = id
 		_spec.ID.Value = id
 	}
 	if nodes := pc.mutation.OwnerIDs(); len(nodes) > 0 {
@@ -196,6 +217,7 @@ func (pc *PetCreate) createSpec() (*Pet, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
+		_node.user_pets = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := pc.mutation.CarsIDs(); len(nodes) > 0 {
@@ -253,12 +275,13 @@ func (pc *PetCreate) createSpec() (*Pet, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
+		_node.pet_best_friend = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	return pe, _spec
+	return _node, _spec
 }
 
-// PetCreateBulk is the builder for creating a bulk of Pet entities.
+// PetCreateBulk is the builder for creating many Pet entities in bulk.
 type PetCreateBulk struct {
 	config
 	builders []*PetCreate
@@ -272,13 +295,14 @@ func (pcb *PetCreateBulk) Save(ctx context.Context) ([]*Pet, error) {
 	for i := range pcb.builders {
 		func(i int, root context.Context) {
 			builder := pcb.builders[i]
+			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
-				if err := builder.preSave(); err != nil {
-					return nil, err
-				}
 				mutation, ok := m.(*PetMutation)
 				if !ok {
 					return nil, fmt.Errorf("unexpected mutation type %T", m)
+				}
+				if err := builder.check(); err != nil {
+					return nil, err
 				}
 				builder.mutation = mutation
 				nodes[i], specs[i] = builder.createSpec()
@@ -313,7 +337,7 @@ func (pcb *PetCreateBulk) Save(ctx context.Context) ([]*Pet, error) {
 	return nodes, nil
 }
 
-// SaveX calls Save and panics if Save returns an error.
+// SaveX is like Save, but panics if an error occurs.
 func (pcb *PetCreateBulk) SaveX(ctx context.Context) []*Pet {
 	v, err := pcb.Save(ctx)
 	if err != nil {

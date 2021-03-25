@@ -7,23 +7,27 @@
 package ent
 
 import (
+	"net"
 	"time"
 
-	"github.com/facebook/ent/entc/integration/ent/card"
-	"github.com/facebook/ent/entc/integration/ent/fieldtype"
-	"github.com/facebook/ent/entc/integration/ent/file"
-	"github.com/facebook/ent/entc/integration/ent/group"
-	"github.com/facebook/ent/entc/integration/ent/groupinfo"
-	"github.com/facebook/ent/entc/integration/ent/schema"
-	"github.com/facebook/ent/entc/integration/ent/user"
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/entc/integration/ent/card"
+	"entgo.io/ent/entc/integration/ent/fieldtype"
+	"entgo.io/ent/entc/integration/ent/file"
+	"entgo.io/ent/entc/integration/ent/group"
+	"entgo.io/ent/entc/integration/ent/groupinfo"
+	"entgo.io/ent/entc/integration/ent/schema"
+	"entgo.io/ent/entc/integration/ent/task"
+	"entgo.io/ent/entc/integration/ent/user"
 )
 
-// The init function reads all schema descriptors with runtime
-// code (default values, validators or hooks) and stitches it
+// The init function reads all schema descriptors with runtime code
+// (default values, validators, hooks and policies) and stitches it
 // to their package variables.
 func init() {
 	cardMixin := schema.Card{}.Mixin()
 	cardMixinFields0 := cardMixin[0].Fields()
+	_ = cardMixinFields0
 	cardFields := schema.Card{}.Fields()
 	_ = cardFields
 	// cardDescCreateTime is the schema descriptor for create_time field.
@@ -36,12 +40,16 @@ func init() {
 	card.DefaultUpdateTime = cardDescUpdateTime.Default.(func() time.Time)
 	// card.UpdateDefaultUpdateTime holds the default value on update for the update_time field.
 	card.UpdateDefaultUpdateTime = cardDescUpdateTime.UpdateDefault.(func() time.Time)
+	// cardDescBalance is the schema descriptor for balance field.
+	cardDescBalance := cardFields[0].Descriptor()
+	// card.DefaultBalance holds the default value on creation for the balance field.
+	card.DefaultBalance = cardDescBalance.Default.(float64)
 	// cardDescNumber is the schema descriptor for number field.
-	cardDescNumber := cardFields[0].Descriptor()
+	cardDescNumber := cardFields[1].Descriptor()
 	// card.NumberValidator is a validator for the "number" field. It is called by the builders before save.
 	card.NumberValidator = cardDescNumber.Validators[0].(func(string) error)
 	// cardDescName is the schema descriptor for name field.
-	cardDescName := cardFields[1].Descriptor()
+	cardDescName := cardFields[2].Descriptor()
 	// card.NameValidator is a validator for the "name" field. It is called by the builders before save.
 	card.NameValidator = cardDescName.Validators[0].(func(string) error)
 	fieldtypeFields := schema.FieldType{}.Fields()
@@ -51,13 +59,29 @@ func init() {
 	// fieldtype.ValidateOptionalInt32Validator is a validator for the "validate_optional_int32" field. It is called by the builders before save.
 	fieldtype.ValidateOptionalInt32Validator = fieldtypeDescValidateOptionalInt32.Validators[0].(func(int32) error)
 	// fieldtypeDescNdir is the schema descriptor for ndir field.
-	fieldtypeDescNdir := fieldtypeFields[27].Descriptor()
+	fieldtypeDescNdir := fieldtypeFields[28].Descriptor()
 	// fieldtype.NdirValidator is a validator for the "ndir" field. It is called by the builders before save.
 	fieldtype.NdirValidator = fieldtypeDescNdir.Validators[0].(func(string) error)
+	// fieldtypeDescStr is the schema descriptor for str field.
+	fieldtypeDescStr := fieldtypeFields[29].Descriptor()
+	// fieldtype.DefaultStr holds the default value on creation for the str field.
+	fieldtype.DefaultStr = fieldtypeDescStr.Default.(func() sql.NullString)
+	// fieldtypeDescNullStr is the schema descriptor for null_str field.
+	fieldtypeDescNullStr := fieldtypeFields[30].Descriptor()
+	// fieldtype.DefaultNullStr holds the default value on creation for the null_str field.
+	fieldtype.DefaultNullStr = fieldtypeDescNullStr.Default.(func() sql.NullString)
 	// fieldtypeDescLink is the schema descriptor for link field.
-	fieldtypeDescLink := fieldtypeFields[30].Descriptor()
+	fieldtypeDescLink := fieldtypeFields[31].Descriptor()
 	// fieldtype.LinkValidator is a validator for the "link" field. It is called by the builders before save.
 	fieldtype.LinkValidator = fieldtypeDescLink.Validators[0].(func(string) error)
+	// fieldtypeDescIP is the schema descriptor for ip field.
+	fieldtypeDescIP := fieldtypeFields[38].Descriptor()
+	// fieldtype.DefaultIP holds the default value on creation for the ip field.
+	fieldtype.DefaultIP = fieldtypeDescIP.Default.(func() net.IP)
+	// fieldtypeDescMAC is the schema descriptor for mac field.
+	fieldtypeDescMAC := fieldtypeFields[47].Descriptor()
+	// fieldtype.MACValidator is a validator for the "mac" field. It is called by the builders before save.
+	fieldtype.MACValidator = fieldtypeDescMAC.Validators[0].(func(string) error)
 	fileFields := schema.File{}.Fields()
 	_ = fileFields
 	// fileDescSize is the schema descriptor for size field.
@@ -122,8 +146,17 @@ func init() {
 	groupinfoDescMaxUsers := groupinfoFields[1].Descriptor()
 	// groupinfo.DefaultMaxUsers holds the default value on creation for the max_users field.
 	groupinfo.DefaultMaxUsers = groupinfoDescMaxUsers.Default.(int)
+	taskFields := schema.Task{}.Fields()
+	_ = taskFields
+	// taskDescPriority is the schema descriptor for priority field.
+	taskDescPriority := taskFields[0].Descriptor()
+	// task.DefaultPriority holds the default value on creation for the priority field.
+	task.DefaultPriority = schema.Priority(taskDescPriority.Default.(int))
+	// task.PriorityValidator is a validator for the "priority" field. It is called by the builders before save.
+	task.PriorityValidator = taskDescPriority.Validators[0].(func(int) error)
 	userMixin := schema.User{}.Mixin()
 	userMixinFields0 := userMixin[0].Fields()
+	_ = userMixinFields0
 	userFields := schema.User{}.Fields()
 	_ = userFields
 	// userDescOptionalInt is the schema descriptor for optional_int field.
@@ -134,4 +167,8 @@ func init() {
 	userDescLast := userFields[2].Descriptor()
 	// user.DefaultLast holds the default value on creation for the last field.
 	user.DefaultLast = userDescLast.Default.(string)
+	// userDescAddress is the schema descriptor for address field.
+	userDescAddress := userFields[4].Descriptor()
+	// user.DefaultAddress holds the default value on creation for the address field.
+	user.DefaultAddress = userDescAddress.Default.(func() string)
 }

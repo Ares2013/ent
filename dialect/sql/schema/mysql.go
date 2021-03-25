@@ -6,20 +6,21 @@ package schema
 
 import (
 	"context"
+	"database/sql/driver"
 	"fmt"
 	"math"
-	"sort"
 	"strconv"
 	"strings"
 
-	"github.com/facebook/ent/dialect"
-	"github.com/facebook/ent/dialect/sql"
-	"github.com/facebook/ent/schema/field"
+	"entgo.io/ent/dialect"
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/schema/field"
 )
 
 // MySQL is a MySQL migration driver.
 type MySQL struct {
 	dialect.Driver
+	schema  string
 	version string
 }
 
@@ -27,7 +28,7 @@ type MySQL struct {
 func (d *MySQL) init(ctx context.Context, tx dialect.Tx) error {
 	rows := &sql.Rows{}
 	if err := tx.Query(ctx, "SHOW VARIABLES LIKE 'version'", []interface{}{}, rows); err != nil {
-		return fmt.Errorf("mysql: querying mysql version %v", err)
+		return fmt.Errorf("mysql: querying mysql version %w", err)
 	}
 	defer rows.Close()
 	if !rows.Next() {
@@ -38,25 +39,25 @@ func (d *MySQL) init(ctx context.Context, tx dialect.Tx) error {
 	}
 	version := make([]string, 2)
 	if err := rows.Scan(&version[0], &version[1]); err != nil {
-		return fmt.Errorf("mysql: scanning mysql version: %v", err)
+		return fmt.Errorf("mysql: scanning mysql version: %w", err)
 	}
 	d.version = version[1]
 	return nil
 }
 
 func (d *MySQL) tableExist(ctx context.Context, tx dialect.Tx, name string) (bool, error) {
-	query, args := sql.Select(sql.Count("*")).From(sql.Table("INFORMATION_SCHEMA.TABLES").Unquote()).
+	query, args := sql.Select(sql.Count("*")).From(sql.Table("TABLES").Schema("INFORMATION_SCHEMA")).
 		Where(sql.And(
-			sql.EQ("TABLE_SCHEMA", sql.Raw("(SELECT DATABASE())")),
+			d.matchSchema(),
 			sql.EQ("TABLE_NAME", name),
 		)).Query()
 	return exist(ctx, tx, query, args...)
 }
 
 func (d *MySQL) fkExist(ctx context.Context, tx dialect.Tx, name string) (bool, error) {
-	query, args := sql.Select(sql.Count("*")).From(sql.Table("INFORMATION_SCHEMA.TABLE_CONSTRAINTS").Unquote()).
+	query, args := sql.Select(sql.Count("*")).From(sql.Table("TABLE_CONSTRAINTS").Schema("INFORMATION_SCHEMA")).
 		Where(sql.And(
-			sql.EQ("TABLE_SCHEMA", sql.Raw("(SELECT DATABASE())")),
+			d.matchSchema(),
 			sql.EQ("CONSTRAINT_TYPE", "FOREIGN KEY"),
 			sql.EQ("CONSTRAINT_NAME", name),
 		)).Query()
@@ -67,13 +68,13 @@ func (d *MySQL) fkExist(ctx context.Context, tx dialect.Tx, name string) (bool, 
 func (d *MySQL) table(ctx context.Context, tx dialect.Tx, name string) (*Table, error) {
 	rows := &sql.Rows{}
 	query, args := sql.Select("column_name", "column_type", "is_nullable", "column_key", "column_default", "extra", "character_set_name", "collation_name").
-		From(sql.Table("INFORMATION_SCHEMA.COLUMNS").Unquote()).
+		From(sql.Table("COLUMNS").Schema("INFORMATION_SCHEMA")).
 		Where(sql.And(
-			sql.EQ("TABLE_SCHEMA", sql.Raw("(SELECT DATABASE())")),
+			d.matchSchema(),
 			sql.EQ("TABLE_NAME", name)),
 		).Query()
 	if err := tx.Query(ctx, query, args, rows); err != nil {
-		return nil, fmt.Errorf("mysql: reading table description %v", err)
+		return nil, fmt.Errorf("mysql: reading table description %w", err)
 	}
 	// Call Close in cases of failures (Close is idempotent).
 	defer rows.Close()
@@ -81,7 +82,7 @@ func (d *MySQL) table(ctx context.Context, tx dialect.Tx, name string) (*Table, 
 	for rows.Next() {
 		c := &Column{}
 		if err := d.scanColumn(c, rows); err != nil {
-			return nil, fmt.Errorf("mysql: %v", err)
+			return nil, fmt.Errorf("mysql: %w", err)
 		}
 		if c.PrimaryKey() {
 			t.PrimaryKey = append(t.PrimaryKey, c)
@@ -92,7 +93,7 @@ func (d *MySQL) table(ctx context.Context, tx dialect.Tx, name string) (*Table, 
 		return nil, err
 	}
 	if err := rows.Close(); err != nil {
-		return nil, fmt.Errorf("mysql: closing rows %v", err)
+		return nil, fmt.Errorf("mysql: closing rows %w", err)
 	}
 	indexes, err := d.indexes(ctx, tx, name)
 	if err != nil {
@@ -102,6 +103,11 @@ func (d *MySQL) table(ctx context.Context, tx dialect.Tx, name string) (*Table, 
 	for _, idx := range indexes {
 		t.AddIndex(idx.Name, idx.Unique, idx.columns)
 	}
+	if _, ok := d.mariadb(); ok {
+		if err := d.normalizeJSON(ctx, tx, t); err != nil {
+			return nil, err
+		}
+	}
 	return t, nil
 }
 
@@ -109,20 +115,20 @@ func (d *MySQL) table(ctx context.Context, tx dialect.Tx, name string) (*Table, 
 func (d *MySQL) indexes(ctx context.Context, tx dialect.Tx, name string) ([]*Index, error) {
 	rows := &sql.Rows{}
 	query, args := sql.Select("index_name", "column_name", "non_unique", "seq_in_index").
-		From(sql.Table("INFORMATION_SCHEMA.STATISTICS").Unquote()).
+		From(sql.Table("STATISTICS").Schema("INFORMATION_SCHEMA")).
 		Where(sql.And(
-			sql.EQ("TABLE_SCHEMA", sql.Raw("(SELECT DATABASE())")),
+			d.matchSchema(),
 			sql.EQ("TABLE_NAME", name),
 		)).
 		OrderBy("index_name", "seq_in_index").
 		Query()
 	if err := tx.Query(ctx, query, args, rows); err != nil {
-		return nil, fmt.Errorf("mysql: reading index description %v", err)
+		return nil, fmt.Errorf("mysql: reading index description %w", err)
 	}
 	defer rows.Close()
 	idx, err := d.scanIndexes(rows)
 	if err != nil {
-		return nil, fmt.Errorf("mysql: %v", err)
+		return nil, fmt.Errorf("mysql: %w", err)
 	}
 	return idx, nil
 }
@@ -137,20 +143,20 @@ func (d *MySQL) verifyRange(ctx context.Context, tx dialect.Tx, t *Table, expect
 	}
 	rows := &sql.Rows{}
 	query, args := sql.Select("AUTO_INCREMENT").
-		From(sql.Table("INFORMATION_SCHEMA.TABLES").Unquote()).
+		From(sql.Table("TABLES").Schema("INFORMATION_SCHEMA")).
 		Where(sql.And(
-			sql.EQ("TABLE_SCHEMA", sql.Raw("(SELECT DATABASE())")),
+			d.matchSchema(),
 			sql.EQ("TABLE_NAME", t.Name),
 		)).
 		Query()
 	if err := tx.Query(ctx, query, args, rows); err != nil {
-		return fmt.Errorf("mysql: query auto_increment %v", err)
+		return fmt.Errorf("mysql: query auto_increment %w", err)
 	}
 	// Call Close in cases of failures (Close is idempotent).
 	defer rows.Close()
 	actual := &sql.NullInt64{}
 	if err := sql.ScanOne(rows, actual); err != nil {
-		return fmt.Errorf("mysql: scan auto_increment %v", err)
+		return fmt.Errorf("mysql: scan auto_increment %w", err)
 	}
 	if err := rows.Close(); err != nil {
 		return err
@@ -173,9 +179,20 @@ func (d *MySQL) tBuilder(t *Table) *sql.TableBuilder {
 	for _, pk := range t.PrimaryKey {
 		b.PrimaryKey(pk.Name)
 	}
-	// Default charset / collation on MySQL table.
-	// columns can be override using the Charset / Collate fields.
+	// Charset and collation config on MySQL table.
+	// These options can be overridden by the entsql annotation.
 	b.Charset("utf8mb4").Collate("utf8mb4_bin")
+	if t.Annotation != nil {
+		if charset := t.Annotation.Charset; charset != "" {
+			b.Charset(charset)
+		}
+		if collate := t.Annotation.Collation; collate != "" {
+			b.Collate(collate)
+		}
+		if opts := t.Annotation.Options; opts != "" {
+			b.Options(opts)
+		}
+	}
 	return b
 }
 
@@ -227,7 +244,7 @@ func (d *MySQL) cType(c *Column) (t string) {
 	case field.TypeString:
 		size := c.Size
 		if size == 0 {
-			size = c.defaultSize(d.version)
+			size = d.defaultSize(c)
 		}
 		if size <= math.MaxUint16 {
 			t = fmt.Sprintf("varchar(%d)", size)
@@ -246,10 +263,11 @@ func (d *MySQL) cType(c *Column) (t string) {
 		for i, e := range c.Enums {
 			values[i] = fmt.Sprintf("'%s'", e)
 		}
-		sort.Strings(values)
 		t = fmt.Sprintf("enum(%s)", strings.Join(values, ", "))
 	case field.TypeUUID:
 		t = "char(36) binary"
+	case field.TypeOther:
+		t = c.typ
 	default:
 		panic(fmt.Sprintf("unsupported type %q for column %q", c.Type.String(), c.Name))
 	}
@@ -266,6 +284,15 @@ func (d *MySQL) addColumn(c *Column) *sql.ColumnBuilder {
 	}
 	c.nullable(b)
 	c.defaultValue(b)
+	if c.Type == field.TypeJSON {
+		// Manually add a `CHECK` clause for older versions of MariaDB for validating the
+		// JSON documents. This constraint is automatically included from version 10.4.3.
+		if version, ok := d.mariadb(); ok && compareVersions(version, "10.4.3") == -1 {
+			b.Check(func(b *sql.Builder) {
+				b.WriteString("JSON_VALID(").Ident(c.Name).WriteByte(')')
+			})
+		}
+	}
 	return b
 }
 
@@ -295,7 +322,7 @@ func (d *MySQL) prepare(ctx context.Context, tx dialect.Tx, change *changes, tab
 		// If both the index and the column need to be dropped, the foreign-key
 		// constraint that is associated with them need to be dropped as well.
 		case ok:
-			names, err := fkNames(ctx, tx, table, col.Name)
+			names, err := d.fkNames(ctx, tx, table, col.Name)
 			if err != nil {
 				return err
 			}
@@ -311,7 +338,7 @@ func (d *MySQL) prepare(ctx context.Context, tx dialect.Tx, change *changes, tab
 					break Switch
 				}
 			}
-			names, err := fkNames(ctx, tx, table, col.Name)
+			names, err := d.fkNames(ctx, tx, table, col.Name)
 			if err != nil {
 				return err
 			}
@@ -336,7 +363,7 @@ func (d *MySQL) scanColumn(c *Column, rows *sql.Rows) error {
 		defaults sql.NullString
 	)
 	if err := rows.Scan(&c.Name, &c.typ, &nullable, &c.Key, &defaults, &c.Attr, &sql.NullString{}, &sql.NullString{}); err != nil {
-		return fmt.Errorf("scanning column description: %v", err)
+		return fmt.Errorf("scanning column description: %w", err)
 	}
 	c.Unique = c.UniqueKey()
 	if nullable.Valid {
@@ -390,12 +417,15 @@ func (d *MySQL) scanColumn(c *Column, rows *sql.Rows) error {
 	case "longblob":
 		c.Size = math.MaxUint32
 		c.Type = field.TypeBytes
-	case "varbinary":
+	case "binary", "varbinary":
 		c.Type = field.TypeBytes
 		c.Size = size
 	case "varchar":
 		c.Type = field.TypeString
 		c.Size = size
+	case "text":
+		c.Size = math.MaxUint16
+		c.Type = field.TypeString
 	case "longtext":
 		c.Size = math.MaxInt32
 		c.Type = field.TypeString
@@ -413,6 +443,8 @@ func (d *MySQL) scanColumn(c *Column, rows *sql.Rows) error {
 			return fmt.Errorf("unknown char(%d) type (not a uuid)", size)
 		}
 		c.Type = field.TypeUUID
+	case "point", "geometry", "linestring", "polygon":
+		c.Type = field.TypeOther
 	default:
 		return fmt.Errorf("unknown column type %q for version %q", parts[0], d.version)
 	}
@@ -438,7 +470,7 @@ func (d *MySQL) scanIndexes(rows *sql.Rows) (Indexes, error) {
 			seqindex int
 		)
 		if err := rows.Scan(&name, &column, &nonuniq, &seqindex); err != nil {
-			return nil, fmt.Errorf("scanning index description: %v", err)
+			return nil, fmt.Errorf("scanning index description: %w", err)
 		}
 		// Ignore primary keys.
 		if name == "PRIMARY" {
@@ -487,9 +519,23 @@ func (d *MySQL) renameIndex(t *Table, old, new *Index) sql.Querier {
 	return q.DropIndex(old.Name).AddIndex(new.Builder(t.Name))
 }
 
-// tableSchema returns the query for getting the table schema.
-func (d *MySQL) tableSchema() sql.Querier {
-	return sql.Raw("(SELECT DATABASE())")
+// matchSchema returns the predicate for matching table schema.
+func (d *MySQL) matchSchema(columns ...string) *sql.Predicate {
+	column := "TABLE_SCHEMA"
+	if len(columns) > 0 {
+		column = columns[0]
+	}
+	if d.schema != "" {
+		return sql.EQ(column, d.schema)
+	}
+	return sql.EQ(column, sql.Raw("(SELECT DATABASE())"))
+}
+
+// tables returns the query for getting the in the schema.
+func (d *MySQL) tables() sql.Querier {
+	return sql.Select("TABLE_NAME").
+		From(sql.Table("TABLES").Schema("INFORMATION_SCHEMA")).
+		Where(d.matchSchema())
 }
 
 // alterColumns returns the queries for applying the columns change-set.
@@ -510,6 +556,61 @@ func (d *MySQL) alterColumns(table string, add, modify, drop []*Column) sql.Quer
 	return sql.Queries{b}
 }
 
+// normalizeJSON normalize MariaDB longtext columns to type JSON.
+func (d *MySQL) normalizeJSON(ctx context.Context, tx dialect.Tx, t *Table) error {
+	var (
+		names   []driver.Value
+		columns = make(map[string]*Column)
+	)
+	for _, c := range t.Columns {
+		if c.typ == "longtext" {
+			columns[c.Name] = c
+			names = append(names, c.Name)
+		}
+	}
+	if len(names) == 0 {
+		return nil
+	}
+	rows := &sql.Rows{}
+	query, args := sql.Select("CONSTRAINT_NAME", "CHECK_CLAUSE").
+		From(sql.Table("CHECK_CONSTRAINTS").Schema("INFORMATION_SCHEMA")).
+		Where(sql.And(
+			d.matchSchema("CONSTRAINT_SCHEMA"),
+			sql.EQ("TABLE_NAME", t.Name),
+			sql.InValues("CONSTRAINT_NAME", names...),
+		)).
+		Query()
+	if err := tx.Query(ctx, query, args, rows); err != nil {
+		return fmt.Errorf("mysql: query table constraints %w", err)
+	}
+	// Call Close in cases of failures (Close is idempotent).
+	defer rows.Close()
+	for rows.Next() {
+		var name, check string
+		if err := rows.Scan(&name, &check); err != nil {
+			return fmt.Errorf("mysql: scan table constraints")
+		}
+		c, ok := columns[name]
+		if !ok || !strings.HasPrefix(check, "json_valid") {
+			continue
+		}
+		c.Type = field.TypeJSON
+	}
+	if err := rows.Err(); err != nil {
+		return err
+	}
+	return rows.Close()
+}
+
+// mariadb reports if the migration runs on MariaDB and returns the semver string.
+func (d *MySQL) mariadb() (string, bool) {
+	idx := strings.Index(d.version, "MariaDB")
+	if idx == -1 {
+		return "", false
+	}
+	return d.version[:idx-1], true
+}
+
 // parseColumn returns column parts, size and signed-info from a MySQL type.
 func parseColumn(typ string) (parts []string, size int64, unsigned bool, err error) {
 	switch parts = strings.FieldsFunc(typ, func(r rune) bool {
@@ -525,24 +626,24 @@ func parseColumn(typ string) (parts []string, size int64, unsigned bool, err err
 		case len(parts) == 2: // int(10)
 			size, err = strconv.ParseInt(parts[1], 10, 0)
 		}
-	case "varbinary", "varchar", "char":
+	case "varbinary", "varchar", "char", "binary":
 		size, err = strconv.ParseInt(parts[1], 10, 64)
 	}
 	if err != nil {
-		return parts, size, unsigned, fmt.Errorf("converting %s size to int: %v", parts[0], err)
+		return parts, size, unsigned, fmt.Errorf("converting %s size to int: %w", parts[0], err)
 	}
 	return parts, size, unsigned, nil
 }
 
 // fkNames returns the foreign-key names of a column.
-func fkNames(ctx context.Context, tx dialect.Tx, table, column string) ([]string, error) {
-	query, args := sql.Select("CONSTRAINT_NAME").From(sql.Table("INFORMATION_SCHEMA.KEY_COLUMN_USAGE").Unquote()).
+func (d *MySQL) fkNames(ctx context.Context, tx dialect.Tx, table, column string) ([]string, error) {
+	query, args := sql.Select("CONSTRAINT_NAME").From(sql.Table("KEY_COLUMN_USAGE").Schema("INFORMATION_SCHEMA")).
 		Where(sql.And(
 			sql.EQ("TABLE_NAME", table),
 			sql.EQ("COLUMN_NAME", column),
 			// NULL for unique and primary-key constraints.
 			sql.NotNull("POSITION_IN_UNIQUE_CONSTRAINT"),
-			sql.EQ("TABLE_SCHEMA", sql.Raw("(SELECT DATABASE())")),
+			d.matchSchema(),
 		)).
 		Query()
 	var (
@@ -550,11 +651,32 @@ func fkNames(ctx context.Context, tx dialect.Tx, table, column string) ([]string
 		rows  = &sql.Rows{}
 	)
 	if err := tx.Query(ctx, query, args, rows); err != nil {
-		return nil, fmt.Errorf("mysql: reading constraint names %v", err)
+		return nil, fmt.Errorf("mysql: reading constraint names %w", err)
 	}
 	defer rows.Close()
 	if err := sql.ScanSlice(rows, &names); err != nil {
 		return nil, err
 	}
 	return names, nil
+}
+
+// defaultSize returns the default size for MySQL/MariaDB varchar type
+// based on column size, charset and table indexes, in order to avoid
+// index prefix key limit (767) for older versions of MySQL/MariaDB.
+func (d *MySQL) defaultSize(c *Column) int64 {
+	size := DefaultStringLen
+	version, checked := d.version, "5.7.0"
+	if v, ok := d.mariadb(); ok {
+		version, checked = v, "10.2.2"
+	}
+	switch {
+	// Version is >= 5.7 for MySQL, or >= 10.2.2 for MariaDB.
+	case compareVersions(version, checked) != -1:
+	// Column is non-unique, or not part of any index (reaching
+	// the error 1071).
+	case !c.Unique && len(c.indexes) == 0:
+	default:
+		size = 191
+	}
+	return size
 }

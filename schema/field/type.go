@@ -23,6 +23,7 @@ const (
 	TypeBytes
 	TypeEnum
 	TypeString
+	TypeOther
 	TypeInt8
 	TypeInt16
 	TypeInt32
@@ -49,6 +50,16 @@ func (t Type) String() string {
 // Numeric reports if the given type is a numeric type.
 func (t Type) Numeric() bool {
 	return t >= TypeInt8 && t < endTypes
+}
+
+// Float reports if the given type is a float type.
+func (t Type) Float() bool {
+	return t == TypeFloat32 || t == TypeFloat64
+}
+
+// Integer reports if the given type is an integral type.
+func (t Type) Integer() bool {
+	return t.Numeric() && !t.Float()
 }
 
 // Valid reports if the given type if known type.
@@ -116,6 +127,11 @@ func (t TypeInfo) Comparable() bool {
 	switch t.Type {
 	case TypeBool, TypeTime, TypeUUID, TypeEnum, TypeString:
 		return true
+	case TypeOther:
+		// Always accept custom types as comparable on the database side.
+		// In the future, we should consider adding an interface to let
+		// custom types tell if they are comparable or not (see #1304).
+		return true
 	default:
 		return t.Numeric()
 	}
@@ -138,6 +154,7 @@ var (
 		TypeBytes:   "[]byte",
 		TypeEnum:    "string",
 		TypeString:  "string",
+		TypeOther:   "other",
 		TypeInt:     "int",
 		TypeInt8:    "int8",
 		TypeInt16:   "int16",
@@ -157,6 +174,7 @@ var (
 		TypeTime:  "TypeTime",
 		TypeEnum:  "TypeEnum",
 		TypeBytes: "TypeBytes",
+		TypeOther: "TypeOther",
 	}
 )
 
@@ -167,6 +185,8 @@ type RType struct {
 	Kind    reflect.Kind
 	PkgPath string
 	Methods map[string]struct{ In, Out []*RType }
+	// Used only for in-package checks.
+	rtype reflect.Type
 }
 
 // TypeEqual tests if the RType is equal to given reflect.Type.

@@ -15,10 +15,8 @@ const (
 	FieldModel = "model"
 	// FieldRegisteredAt holds the string denoting the registered_at field in the database.
 	FieldRegisteredAt = "registered_at"
-
 	// EdgeOwner holds the string denoting the owner edge name in mutations.
 	EdgeOwner = "owner"
-
 	// Table holds the table name of the car in the database.
 	Table = "cars"
 	// OwnerTable is the table the holds the owner relation/edge.
@@ -37,7 +35,23 @@ var Columns = []string{
 	FieldRegisteredAt,
 }
 
-// ForeignKeys holds the SQL foreign-keys that are owned by the Car type.
+// ForeignKeys holds the SQL foreign-keys that are owned by the "cars"
+// table and are not defined as standalone fields in the schema.
 var ForeignKeys = []string{
 	"user_cars",
+}
+
+// ValidColumn reports if the column name is valid (part of the table columns).
+func ValidColumn(column string) bool {
+	for i := range Columns {
+		if column == Columns[i] {
+			return true
+		}
+	}
+	for i := range ForeignKeys {
+		if column == ForeignKeys[i] {
+			return true
+		}
+	}
+	return false
 }

@@ -7,13 +7,13 @@
 package file
 
 import (
-	"github.com/facebook/ent/dialect/gremlin/graph/dsl"
-	"github.com/facebook/ent/dialect/gremlin/graph/dsl/__"
-	"github.com/facebook/ent/dialect/gremlin/graph/dsl/p"
-	"github.com/facebook/ent/entc/integration/gremlin/ent/predicate"
+	"entgo.io/ent/dialect/gremlin/graph/dsl"
+	"entgo.io/ent/dialect/gremlin/graph/dsl/__"
+	"entgo.io/ent/dialect/gremlin/graph/dsl/p"
+	"entgo.io/ent/entc/integration/gremlin/ent/predicate"
 )
 
-// ID filters vertices based on their identifier.
+// ID filters vertices based on their ID field.
 func ID(id string) predicate.File {
 	return predicate.File(func(t *dsl.Traversal) {
 		t.HasID(id)
@@ -109,6 +109,13 @@ func User(v string) predicate.File {
 func Group(v string) predicate.File {
 	return predicate.File(func(t *dsl.Traversal) {
 		t.Has(Label, FieldGroup, p.EQ(v))
+	})
+}
+
+// Op applies equality check predicate on the "op" field. It's identical to OpEQ.
+func Op(v bool) predicate.File {
+	return predicate.File(func(t *dsl.Traversal) {
+		t.Has(Label, FieldOp, p.EQ(v))
 	})
 }
 
@@ -459,6 +466,34 @@ func GroupNotNil() predicate.File {
 	})
 }
 
+// OpEQ applies the EQ predicate on the "op" field.
+func OpEQ(v bool) predicate.File {
+	return predicate.File(func(t *dsl.Traversal) {
+		t.Has(Label, FieldOp, p.EQ(v))
+	})
+}
+
+// OpNEQ applies the NEQ predicate on the "op" field.
+func OpNEQ(v bool) predicate.File {
+	return predicate.File(func(t *dsl.Traversal) {
+		t.Has(Label, FieldOp, p.NEQ(v))
+	})
+}
+
+// OpIsNil applies the IsNil predicate on the "op" field.
+func OpIsNil() predicate.File {
+	return predicate.File(func(t *dsl.Traversal) {
+		t.HasLabel(Label).HasNot(FieldOp)
+	})
+}
+
+// OpNotNil applies the NotNil predicate on the "op" field.
+func OpNotNil() predicate.File {
+	return predicate.File(func(t *dsl.Traversal) {
+		t.HasLabel(Label).Has(FieldOp)
+	})
+}
+
 // HasOwner applies the HasEdge predicate on the "owner" edge.
 func HasOwner() predicate.File {
 	return predicate.File(func(t *dsl.Traversal) {
@@ -513,7 +548,7 @@ func HasFieldWith(preds ...predicate.FieldType) predicate.File {
 	})
 }
 
-// And groups list of predicates with the AND operator between them.
+// And groups predicates with the AND operator between them.
 func And(predicates ...predicate.File) predicate.File {
 	return predicate.File(func(tr *dsl.Traversal) {
 		trs := make([]interface{}, 0, len(predicates))
@@ -526,7 +561,7 @@ func And(predicates ...predicate.File) predicate.File {
 	})
 }
 
-// Or groups list of predicates with the OR operator between them.
+// Or groups predicates with the OR operator between them.
 func Or(predicates ...predicate.File) predicate.File {
 	return predicate.File(func(tr *dsl.Traversal) {
 		trs := make([]interface{}, 0, len(predicates))

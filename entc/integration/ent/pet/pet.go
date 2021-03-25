@@ -13,23 +13,23 @@ const (
 	FieldID = "id"
 	// FieldName holds the string denoting the name field in the database.
 	FieldName = "name"
-
+	// FieldUUID holds the string denoting the uuid field in the database.
+	FieldUUID = "uuid"
 	// EdgeTeam holds the string denoting the team edge name in mutations.
 	EdgeTeam = "team"
 	// EdgeOwner holds the string denoting the owner edge name in mutations.
 	EdgeOwner = "owner"
-
 	// Table holds the table name of the pet in the database.
-	Table = "pets"
+	Table = "pet"
 	// TeamTable is the table the holds the team relation/edge.
-	TeamTable = "pets"
+	TeamTable = "pet"
 	// TeamInverseTable is the table name for the User entity.
 	// It exists in this package in order to avoid circular dependency with the "user" package.
 	TeamInverseTable = "users"
 	// TeamColumn is the table column denoting the team relation/edge.
 	TeamColumn = "user_team"
 	// OwnerTable is the table the holds the owner relation/edge.
-	OwnerTable = "pets"
+	OwnerTable = "pet"
 	// OwnerInverseTable is the table name for the User entity.
 	// It exists in this package in order to avoid circular dependency with the "user" package.
 	OwnerInverseTable = "users"
@@ -41,12 +41,29 @@ const (
 var Columns = []string{
 	FieldID,
 	FieldName,
+	FieldUUID,
 }
 
-// ForeignKeys holds the SQL foreign-keys that are owned by the Pet type.
+// ForeignKeys holds the SQL foreign-keys that are owned by the "pet"
+// table and are not defined as standalone fields in the schema.
 var ForeignKeys = []string{
 	"user_pets",
 	"user_team",
+}
+
+// ValidColumn reports if the column name is valid (part of the table columns).
+func ValidColumn(column string) bool {
+	for i := range Columns {
+		if column == Columns[i] {
+			return true
+		}
+	}
+	for i := range ForeignKeys {
+		if column == ForeignKeys[i] {
+			return true
+		}
+	}
+	return false
 }
 
 // comment from another template.

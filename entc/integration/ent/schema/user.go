@@ -5,10 +5,10 @@
 package schema
 
 import (
-	"github.com/facebook/ent"
-	"github.com/facebook/ent/schema/edge"
-	"github.com/facebook/ent/schema/field"
-	"github.com/facebook/ent/schema/mixin"
+	"entgo.io/ent"
+	"entgo.io/ent/schema/edge"
+	"entgo.io/ent/schema/field"
+	"entgo.io/ent/schema/mixin"
 )
 
 // User holds the schema for the user entity.
@@ -34,6 +34,9 @@ func (User) Fields() []ent.Field {
 		field.String("nickname").
 			Optional().
 			Unique(),
+		field.String("address").
+			Optional().
+			DefaultFunc(func() string { return "static" }),
 		field.String("phone").
 			Optional().
 			Unique(),

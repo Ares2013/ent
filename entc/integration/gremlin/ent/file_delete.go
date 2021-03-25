@@ -10,25 +10,24 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/facebook/ent/dialect/gremlin"
-	"github.com/facebook/ent/dialect/gremlin/graph/dsl"
-	"github.com/facebook/ent/dialect/gremlin/graph/dsl/__"
-	"github.com/facebook/ent/dialect/gremlin/graph/dsl/g"
-	"github.com/facebook/ent/entc/integration/gremlin/ent/file"
-	"github.com/facebook/ent/entc/integration/gremlin/ent/predicate"
+	"entgo.io/ent/dialect/gremlin"
+	"entgo.io/ent/dialect/gremlin/graph/dsl"
+	"entgo.io/ent/dialect/gremlin/graph/dsl/__"
+	"entgo.io/ent/dialect/gremlin/graph/dsl/g"
+	"entgo.io/ent/entc/integration/gremlin/ent/file"
+	"entgo.io/ent/entc/integration/gremlin/ent/predicate"
 )
 
 // FileDelete is the builder for deleting a File entity.
 type FileDelete struct {
 	config
-	hooks      []Hook
-	mutation   *FileMutation
-	predicates []predicate.File
+	hooks    []Hook
+	mutation *FileMutation
 }
 
-// Where adds a new predicate to the delete builder.
+// Where adds a new predicate to the FileDelete builder.
 func (fd *FileDelete) Where(ps ...predicate.File) *FileDelete {
-	fd.predicates = append(fd.predicates, ps...)
+	fd.mutation.predicates = append(fd.mutation.predicates, ps...)
 	return fd
 }
 
@@ -81,7 +80,7 @@ func (fd *FileDelete) gremlinExec(ctx context.Context) (int, error) {
 
 func (fd *FileDelete) gremlin() *dsl.Traversal {
 	t := g.V().HasLabel(file.Label)
-	for _, p := range fd.predicates {
+	for _, p := range fd.mutation.predicates {
 		p(t)
 	}
 	return t.SideEffect(__.Drop()).Count()

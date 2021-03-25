@@ -39,17 +39,17 @@ const (
 	FieldState = "state"
 	// FieldStatus holds the string denoting the status field in the database.
 	FieldStatus = "status"
-
+	// FieldWorkplace holds the string denoting the workplace field in the database.
+	FieldWorkplace = "workplace"
 	// EdgeCar holds the string denoting the car edge name in mutations.
 	EdgeCar = "car"
 	// EdgePets holds the string denoting the pets edge name in mutations.
 	EdgePets = "pets"
 	// EdgeFriends holds the string denoting the friends edge name in mutations.
 	EdgeFriends = "friends"
-
-	// CarFieldID holds the string denoting the id field of the Car.
+	// CarFieldID holds the string denoting the ID field of the Car.
 	CarFieldID = "id"
-	// PetFieldID holds the string denoting the id field of the Pet.
+	// PetFieldID holds the string denoting the ID field of the Pet.
 	PetFieldID = "id"
 	// Table holds the table name of the user in the database.
 	Table = "users"
@@ -86,6 +86,7 @@ var Columns = []string{
 	FieldBlob,
 	FieldState,
 	FieldStatus,
+	FieldWorkplace,
 }
 
 var (
@@ -94,25 +95,39 @@ var (
 	FriendsPrimaryKey = []string{"user", "friend"}
 )
 
+// ValidColumn reports if the column name is valid (part of the table columns).
+func ValidColumn(column string) bool {
+	for i := range Columns {
+		if column == Columns[i] {
+			return true
+		}
+	}
+	return false
+}
+
 var (
-	// DefaultMixedString holds the default value on creation for the mixed_string field.
+	// DefaultMixedString holds the default value on creation for the "mixed_string" field.
 	DefaultMixedString string
-	// DefaultPhone holds the default value on creation for the phone field.
+	// NicknameValidator is a validator for the "nickname" field. It is called by the builders before save.
+	NicknameValidator func(string) error
+	// DefaultPhone holds the default value on creation for the "phone" field.
 	DefaultPhone string
-	// DefaultTitle holds the default value on creation for the title field.
+	// DefaultBuffer holds the default value on creation for the "buffer" field.
+	DefaultBuffer func() []byte
+	// DefaultTitle holds the default value on creation for the "title" field.
 	DefaultTitle string
 )
 
-// MixedEnum defines the type for the mixed_enum enum field.
+// MixedEnum defines the type for the "mixed_enum" enum field.
 type MixedEnum string
 
-// MixedEnumOn is the default MixedEnum.
+// MixedEnumOn is the default value of the MixedEnum enum.
 const DefaultMixedEnum = MixedEnumOn
 
 // MixedEnum values.
 const (
-	MixedEnumOff MixedEnum = "off"
 	MixedEnumOn  MixedEnum = "on"
+	MixedEnumOff MixedEnum = "off"
 )
 
 func (me MixedEnum) String() string {
@@ -122,14 +137,14 @@ func (me MixedEnum) String() string {
 // MixedEnumValidator is a validator for the "mixed_enum" field enum values. It is called by the builders before save.
 func MixedEnumValidator(me MixedEnum) error {
 	switch me {
-	case MixedEnumOff, MixedEnumOn:
+	case MixedEnumOn, MixedEnumOff:
 		return nil
 	default:
 		return fmt.Errorf("user: invalid enum value for mixed_enum field: %q", me)
 	}
 }
 
-// State defines the type for the state enum field.
+// State defines the type for the "state" enum field.
 type State string
 
 // State values.
@@ -153,7 +168,7 @@ func StateValidator(s State) error {
 	}
 }
 
-// Status defines the type for the status enum field.
+// Status defines the type for the "status" enum field.
 type Status string
 
 // Status values.

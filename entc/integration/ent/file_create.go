@@ -11,12 +11,12 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/facebook/ent/dialect/sql/sqlgraph"
-	"github.com/facebook/ent/entc/integration/ent/fieldtype"
-	"github.com/facebook/ent/entc/integration/ent/file"
-	"github.com/facebook/ent/entc/integration/ent/filetype"
-	"github.com/facebook/ent/entc/integration/ent/user"
-	"github.com/facebook/ent/schema/field"
+	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/entc/integration/ent/fieldtype"
+	"entgo.io/ent/entc/integration/ent/file"
+	"entgo.io/ent/entc/integration/ent/filetype"
+	"entgo.io/ent/entc/integration/ent/user"
+	"entgo.io/ent/schema/field"
 )
 
 // FileCreate is the builder for creating a File entity.
@@ -26,13 +26,13 @@ type FileCreate struct {
 	hooks    []Hook
 }
 
-// SetSize sets the size field.
+// SetSize sets the "size" field.
 func (fc *FileCreate) SetSize(i int) *FileCreate {
 	fc.mutation.SetSize(i)
 	return fc
 }
 
-// SetNillableSize sets the size field if the given value is not nil.
+// SetNillableSize sets the "size" field if the given value is not nil.
 func (fc *FileCreate) SetNillableSize(i *int) *FileCreate {
 	if i != nil {
 		fc.SetSize(*i)
@@ -40,19 +40,19 @@ func (fc *FileCreate) SetNillableSize(i *int) *FileCreate {
 	return fc
 }
 
-// SetName sets the name field.
+// SetName sets the "name" field.
 func (fc *FileCreate) SetName(s string) *FileCreate {
 	fc.mutation.SetName(s)
 	return fc
 }
 
-// SetUser sets the user field.
+// SetUser sets the "user" field.
 func (fc *FileCreate) SetUser(s string) *FileCreate {
 	fc.mutation.SetUser(s)
 	return fc
 }
 
-// SetNillableUser sets the user field if the given value is not nil.
+// SetNillableUser sets the "user" field if the given value is not nil.
 func (fc *FileCreate) SetNillableUser(s *string) *FileCreate {
 	if s != nil {
 		fc.SetUser(*s)
@@ -60,13 +60,13 @@ func (fc *FileCreate) SetNillableUser(s *string) *FileCreate {
 	return fc
 }
 
-// SetGroup sets the group field.
+// SetGroup sets the "group" field.
 func (fc *FileCreate) SetGroup(s string) *FileCreate {
 	fc.mutation.SetGroup(s)
 	return fc
 }
 
-// SetNillableGroup sets the group field if the given value is not nil.
+// SetNillableGroup sets the "group" field if the given value is not nil.
 func (fc *FileCreate) SetNillableGroup(s *string) *FileCreate {
 	if s != nil {
 		fc.SetGroup(*s)
@@ -74,13 +74,27 @@ func (fc *FileCreate) SetNillableGroup(s *string) *FileCreate {
 	return fc
 }
 
-// SetOwnerID sets the owner edge to User by id.
+// SetOp sets the "op" field.
+func (fc *FileCreate) SetOp(b bool) *FileCreate {
+	fc.mutation.SetOp(b)
+	return fc
+}
+
+// SetNillableOp sets the "op" field if the given value is not nil.
+func (fc *FileCreate) SetNillableOp(b *bool) *FileCreate {
+	if b != nil {
+		fc.SetOp(*b)
+	}
+	return fc
+}
+
+// SetOwnerID sets the "owner" edge to the User entity by ID.
 func (fc *FileCreate) SetOwnerID(id int) *FileCreate {
 	fc.mutation.SetOwnerID(id)
 	return fc
 }
 
-// SetNillableOwnerID sets the owner edge to User by id if the given value is not nil.
+// SetNillableOwnerID sets the "owner" edge to the User entity by ID if the given value is not nil.
 func (fc *FileCreate) SetNillableOwnerID(id *int) *FileCreate {
 	if id != nil {
 		fc = fc.SetOwnerID(*id)
@@ -88,18 +102,18 @@ func (fc *FileCreate) SetNillableOwnerID(id *int) *FileCreate {
 	return fc
 }
 
-// SetOwner sets the owner edge to User.
+// SetOwner sets the "owner" edge to the User entity.
 func (fc *FileCreate) SetOwner(u *User) *FileCreate {
 	return fc.SetOwnerID(u.ID)
 }
 
-// SetTypeID sets the type edge to FileType by id.
+// SetTypeID sets the "type" edge to the FileType entity by ID.
 func (fc *FileCreate) SetTypeID(id int) *FileCreate {
 	fc.mutation.SetTypeID(id)
 	return fc
 }
 
-// SetNillableTypeID sets the type edge to FileType by id if the given value is not nil.
+// SetNillableTypeID sets the "type" edge to the FileType entity by ID if the given value is not nil.
 func (fc *FileCreate) SetNillableTypeID(id *int) *FileCreate {
 	if id != nil {
 		fc = fc.SetTypeID(*id)
@@ -107,18 +121,18 @@ func (fc *FileCreate) SetNillableTypeID(id *int) *FileCreate {
 	return fc
 }
 
-// SetType sets the type edge to FileType.
+// SetType sets the "type" edge to the FileType entity.
 func (fc *FileCreate) SetType(f *FileType) *FileCreate {
 	return fc.SetTypeID(f.ID)
 }
 
-// AddFieldIDs adds the field edge to FieldType by ids.
+// AddFieldIDs adds the "field" edge to the FieldType entity by IDs.
 func (fc *FileCreate) AddFieldIDs(ids ...int) *FileCreate {
 	fc.mutation.AddFieldIDs(ids...)
 	return fc
 }
 
-// AddField adds the field edges to FieldType.
+// AddField adds the "field" edges to the FieldType entity.
 func (fc *FileCreate) AddField(f ...*FieldType) *FileCreate {
 	ids := make([]int, len(f))
 	for i := range f {
@@ -134,20 +148,24 @@ func (fc *FileCreate) Mutation() *FileMutation {
 
 // Save creates the File in the database.
 func (fc *FileCreate) Save(ctx context.Context) (*File, error) {
-	if err := fc.preSave(); err != nil {
-		return nil, err
-	}
 	var (
 		err  error
 		node *File
 	)
+	fc.defaults()
 	if len(fc.hooks) == 0 {
+		if err = fc.check(); err != nil {
+			return nil, err
+		}
 		node, err = fc.sqlSave(ctx)
 	} else {
 		var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 			mutation, ok := m.(*FileMutation)
 			if !ok {
 				return nil, fmt.Errorf("unexpected mutation type %T", m)
+			}
+			if err = fc.check(); err != nil {
+				return nil, err
 			}
 			fc.mutation = mutation
 			node, err = fc.sqlSave(ctx)
@@ -173,10 +191,18 @@ func (fc *FileCreate) SaveX(ctx context.Context) *File {
 	return v
 }
 
-func (fc *FileCreate) preSave() error {
+// defaults sets the default values of the builder before save.
+func (fc *FileCreate) defaults() {
 	if _, ok := fc.mutation.Size(); !ok {
 		v := file.DefaultSize
 		fc.mutation.SetSize(v)
+	}
+}
+
+// check runs all checks and user-defined validators on the builder.
+func (fc *FileCreate) check() error {
+	if _, ok := fc.mutation.Size(); !ok {
+		return &ValidationError{Name: "size", err: errors.New("ent: missing required field \"size\"")}
 	}
 	if v, ok := fc.mutation.Size(); ok {
 		if err := file.SizeValidator(v); err != nil {
@@ -190,7 +216,7 @@ func (fc *FileCreate) preSave() error {
 }
 
 func (fc *FileCreate) sqlSave(ctx context.Context) (*File, error) {
-	f, _spec := fc.createSpec()
+	_node, _spec := fc.createSpec()
 	if err := sqlgraph.CreateNode(ctx, fc.driver, _spec); err != nil {
 		if cerr, ok := isSQLConstraintError(err); ok {
 			err = cerr
@@ -198,13 +224,13 @@ func (fc *FileCreate) sqlSave(ctx context.Context) (*File, error) {
 		return nil, err
 	}
 	id := _spec.ID.Value.(int64)
-	f.ID = int(id)
-	return f, nil
+	_node.ID = int(id)
+	return _node, nil
 }
 
 func (fc *FileCreate) createSpec() (*File, *sqlgraph.CreateSpec) {
 	var (
-		f     = &File{config: fc.config}
+		_node = &File{config: fc.config}
 		_spec = &sqlgraph.CreateSpec{
 			Table: file.Table,
 			ID: &sqlgraph.FieldSpec{
@@ -219,7 +245,7 @@ func (fc *FileCreate) createSpec() (*File, *sqlgraph.CreateSpec) {
 			Value:  value,
 			Column: file.FieldSize,
 		})
-		f.Size = value
+		_node.Size = value
 	}
 	if value, ok := fc.mutation.Name(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
@@ -227,7 +253,7 @@ func (fc *FileCreate) createSpec() (*File, *sqlgraph.CreateSpec) {
 			Value:  value,
 			Column: file.FieldName,
 		})
-		f.Name = value
+		_node.Name = value
 	}
 	if value, ok := fc.mutation.User(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
@@ -235,7 +261,7 @@ func (fc *FileCreate) createSpec() (*File, *sqlgraph.CreateSpec) {
 			Value:  value,
 			Column: file.FieldUser,
 		})
-		f.User = &value
+		_node.User = &value
 	}
 	if value, ok := fc.mutation.Group(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
@@ -243,7 +269,15 @@ func (fc *FileCreate) createSpec() (*File, *sqlgraph.CreateSpec) {
 			Value:  value,
 			Column: file.FieldGroup,
 		})
-		f.Group = value
+		_node.Group = value
+	}
+	if value, ok := fc.mutation.GetOp(); ok {
+		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
+			Type:   field.TypeBool,
+			Value:  value,
+			Column: file.FieldOp,
+		})
+		_node.Op = value
 	}
 	if nodes := fc.mutation.OwnerIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -262,6 +296,7 @@ func (fc *FileCreate) createSpec() (*File, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
+		_node.user_files = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := fc.mutation.TypeIDs(); len(nodes) > 0 {
@@ -281,6 +316,7 @@ func (fc *FileCreate) createSpec() (*File, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
+		_node.file_type_files = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := fc.mutation.FieldIDs(); len(nodes) > 0 {
@@ -302,10 +338,10 @@ func (fc *FileCreate) createSpec() (*File, *sqlgraph.CreateSpec) {
 		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	return f, _spec
+	return _node, _spec
 }
 
-// FileCreateBulk is the builder for creating a bulk of File entities.
+// FileCreateBulk is the builder for creating many File entities in bulk.
 type FileCreateBulk struct {
 	config
 	builders []*FileCreate
@@ -319,13 +355,14 @@ func (fcb *FileCreateBulk) Save(ctx context.Context) ([]*File, error) {
 	for i := range fcb.builders {
 		func(i int, root context.Context) {
 			builder := fcb.builders[i]
+			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
-				if err := builder.preSave(); err != nil {
-					return nil, err
-				}
 				mutation, ok := m.(*FileMutation)
 				if !ok {
 					return nil, fmt.Errorf("unexpected mutation type %T", m)
+				}
+				if err := builder.check(); err != nil {
+					return nil, err
 				}
 				builder.mutation = mutation
 				nodes[i], specs[i] = builder.createSpec()
@@ -362,7 +399,7 @@ func (fcb *FileCreateBulk) Save(ctx context.Context) ([]*File, error) {
 	return nodes, nil
 }
 
-// SaveX calls Save and panics if Save returns an error.
+// SaveX is like Save, but panics if an error occurs.
 func (fcb *FileCreateBulk) SaveX(ctx context.Context) []*File {
 	v, err := fcb.Save(ctx)
 	if err != nil {

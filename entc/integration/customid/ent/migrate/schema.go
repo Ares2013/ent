@@ -7,14 +7,14 @@
 package migrate
 
 import (
-	"github.com/facebook/ent/dialect/sql/schema"
-	"github.com/facebook/ent/schema/field"
+	"entgo.io/ent/dialect/sql/schema"
+	"entgo.io/ent/schema/field"
 )
 
 var (
 	// BlobsColumns holds the columns for the "blobs" table.
 	BlobsColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID},
+		{Name: "id", Type: field.TypeUUID, Unique: true},
 		{Name: "uuid", Type: field.TypeUUID, Unique: true},
 		{Name: "blob_parent", Type: field.TypeUUID, Unique: true, Nullable: true},
 	}
@@ -25,9 +25,8 @@ var (
 		PrimaryKey: []*schema.Column{BlobsColumns[0]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
-				Symbol:  "blobs_blobs_parent",
-				Columns: []*schema.Column{BlobsColumns[2]},
-
+				Symbol:     "blobs_blobs_parent",
+				Columns:    []*schema.Column{BlobsColumns[2]},
 				RefColumns: []*schema.Column{BlobsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -39,7 +38,7 @@ var (
 		{Name: "before_id", Type: field.TypeFloat64, Nullable: true},
 		{Name: "after_id", Type: field.TypeFloat64, Nullable: true},
 		{Name: "model", Type: field.TypeString},
-		{Name: "pet_cars", Type: field.TypeString, Nullable: true, Size: 25},
+		{Name: "pet_cars", Type: field.TypeString, Nullable: true, Size: 36},
 	}
 	// CarsTable holds the schema information for the "cars" table.
 	CarsTable = &schema.Table{
@@ -48,9 +47,8 @@ var (
 		PrimaryKey: []*schema.Column{CarsColumns[0]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
-				Symbol:  "cars_pets_cars",
-				Columns: []*schema.Column{CarsColumns[4]},
-
+				Symbol:     "cars_pets_cars",
+				Columns:    []*schema.Column{CarsColumns[4]},
 				RefColumns: []*schema.Column{PetsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -67,10 +65,45 @@ var (
 		PrimaryKey:  []*schema.Column{GroupsColumns[0]},
 		ForeignKeys: []*schema.ForeignKey{},
 	}
+	// MixinIdsColumns holds the columns for the "mixin_ids" table.
+	MixinIdsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "some_field", Type: field.TypeString},
+		{Name: "mixin_field", Type: field.TypeString},
+	}
+	// MixinIdsTable holds the schema information for the "mixin_ids" table.
+	MixinIdsTable = &schema.Table{
+		Name:        "mixin_ids",
+		Columns:     MixinIdsColumns,
+		PrimaryKey:  []*schema.Column{MixinIdsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{},
+		Indexes: []*schema.Index{
+			{
+				Name:    "mixinid_id",
+				Unique:  false,
+				Columns: []*schema.Column{MixinIdsColumns[0]},
+			},
+			{
+				Name:    "mixinid_id_some_field",
+				Unique:  false,
+				Columns: []*schema.Column{MixinIdsColumns[0], MixinIdsColumns[1]},
+			},
+			{
+				Name:    "mixinid_id_mixin_field",
+				Unique:  false,
+				Columns: []*schema.Column{MixinIdsColumns[0], MixinIdsColumns[2]},
+			},
+			{
+				Name:    "mixinid_id_mixin_field_some_field",
+				Unique:  false,
+				Columns: []*schema.Column{MixinIdsColumns[0], MixinIdsColumns[2], MixinIdsColumns[1]},
+			},
+		},
+	}
 	// PetsColumns holds the columns for the "pets" table.
 	PetsColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeString, Unique: true, Size: 25},
-		{Name: "pet_best_friend", Type: field.TypeString, Unique: true, Nullable: true, Size: 25},
+		{Name: "id", Type: field.TypeString, Unique: true, Size: 36},
+		{Name: "pet_best_friend", Type: field.TypeString, Unique: true, Nullable: true, Size: 36},
 		{Name: "user_pets", Type: field.TypeInt, Nullable: true},
 	}
 	// PetsTable holds the schema information for the "pets" table.
@@ -80,16 +113,14 @@ var (
 		PrimaryKey: []*schema.Column{PetsColumns[0]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
-				Symbol:  "pets_pets_best_friend",
-				Columns: []*schema.Column{PetsColumns[1]},
-
+				Symbol:     "pets_pets_best_friend",
+				Columns:    []*schema.Column{PetsColumns[1]},
 				RefColumns: []*schema.Column{PetsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
-				Symbol:  "pets_users_pets",
-				Columns: []*schema.Column{PetsColumns[2]},
-
+				Symbol:     "pets_users_pets",
+				Columns:    []*schema.Column{PetsColumns[2]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -107,9 +138,8 @@ var (
 		PrimaryKey: []*schema.Column{UsersColumns[0]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
-				Symbol:  "users_users_children",
-				Columns: []*schema.Column{UsersColumns[1]},
-
+				Symbol:     "users_users_children",
+				Columns:    []*schema.Column{UsersColumns[1]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -127,16 +157,14 @@ var (
 		PrimaryKey: []*schema.Column{BlobLinksColumns[0], BlobLinksColumns[1]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
-				Symbol:  "blob_links_blob_id",
-				Columns: []*schema.Column{BlobLinksColumns[0]},
-
+				Symbol:     "blob_links_blob_id",
+				Columns:    []*schema.Column{BlobLinksColumns[0]},
 				RefColumns: []*schema.Column{BlobsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
 			{
-				Symbol:  "blob_links_link_id",
-				Columns: []*schema.Column{BlobLinksColumns[1]},
-
+				Symbol:     "blob_links_link_id",
+				Columns:    []*schema.Column{BlobLinksColumns[1]},
 				RefColumns: []*schema.Column{BlobsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
@@ -154,16 +182,14 @@ var (
 		PrimaryKey: []*schema.Column{GroupUsersColumns[0], GroupUsersColumns[1]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
-				Symbol:  "group_users_group_id",
-				Columns: []*schema.Column{GroupUsersColumns[0]},
-
+				Symbol:     "group_users_group_id",
+				Columns:    []*schema.Column{GroupUsersColumns[0]},
 				RefColumns: []*schema.Column{GroupsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
 			{
-				Symbol:  "group_users_user_id",
-				Columns: []*schema.Column{GroupUsersColumns[1]},
-
+				Symbol:     "group_users_user_id",
+				Columns:    []*schema.Column{GroupUsersColumns[1]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
@@ -171,8 +197,8 @@ var (
 	}
 	// PetFriendsColumns holds the columns for the "pet_friends" table.
 	PetFriendsColumns = []*schema.Column{
-		{Name: "pet_id", Type: field.TypeString, Size: 25},
-		{Name: "friend_id", Type: field.TypeString, Size: 25},
+		{Name: "pet_id", Type: field.TypeString, Size: 36},
+		{Name: "friend_id", Type: field.TypeString, Size: 36},
 	}
 	// PetFriendsTable holds the schema information for the "pet_friends" table.
 	PetFriendsTable = &schema.Table{
@@ -181,16 +207,14 @@ var (
 		PrimaryKey: []*schema.Column{PetFriendsColumns[0], PetFriendsColumns[1]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
-				Symbol:  "pet_friends_pet_id",
-				Columns: []*schema.Column{PetFriendsColumns[0]},
-
+				Symbol:     "pet_friends_pet_id",
+				Columns:    []*schema.Column{PetFriendsColumns[0]},
 				RefColumns: []*schema.Column{PetsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
 			{
-				Symbol:  "pet_friends_friend_id",
-				Columns: []*schema.Column{PetFriendsColumns[1]},
-
+				Symbol:     "pet_friends_friend_id",
+				Columns:    []*schema.Column{PetFriendsColumns[1]},
 				RefColumns: []*schema.Column{PetsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
@@ -201,6 +225,7 @@ var (
 		BlobsTable,
 		CarsTable,
 		GroupsTable,
+		MixinIdsTable,
 		PetsTable,
 		UsersTable,
 		BlobLinksTable,

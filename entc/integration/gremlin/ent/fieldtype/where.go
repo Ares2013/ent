@@ -12,15 +12,16 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/facebook/ent/dialect/gremlin/graph/dsl"
-	"github.com/facebook/ent/dialect/gremlin/graph/dsl/__"
-	"github.com/facebook/ent/dialect/gremlin/graph/dsl/p"
-	"github.com/facebook/ent/entc/integration/ent/role"
-	"github.com/facebook/ent/entc/integration/ent/schema"
-	"github.com/facebook/ent/entc/integration/gremlin/ent/predicate"
+	"entgo.io/ent/dialect/gremlin/graph/dsl"
+	"entgo.io/ent/dialect/gremlin/graph/dsl/__"
+	"entgo.io/ent/dialect/gremlin/graph/dsl/p"
+	"entgo.io/ent/entc/integration/ent/role"
+	"entgo.io/ent/entc/integration/ent/schema"
+	"entgo.io/ent/entc/integration/gremlin/ent/predicate"
+	"github.com/google/uuid"
 )
 
-// ID filters vertices based on their identifier.
+// ID filters vertices based on their ID field.
 func ID(id string) predicate.FieldType {
 	return predicate.FieldType(func(t *dsl.Traversal) {
 		t.HasID(id)
@@ -238,6 +239,14 @@ func OptionalUint64(v uint64) predicate.FieldType {
 	})
 }
 
+// Duration applies equality check predicate on the "duration" field. It's identical to DurationEQ.
+func Duration(v time.Duration) predicate.FieldType {
+	vc := int64(v)
+	return predicate.FieldType(func(t *dsl.Traversal) {
+		t.Has(Label, FieldDuration, p.EQ(vc))
+	})
+}
+
 // OptionalFloat applies equality check predicate on the "optional_float" field. It's identical to OptionalFloatEQ.
 func OptionalFloat(v float64) predicate.FieldType {
 	return predicate.FieldType(func(t *dsl.Traversal) {
@@ -391,6 +400,21 @@ func SchemaFloat32(v schema.Float32) predicate.FieldType {
 	vc := float32(v)
 	return predicate.FieldType(func(t *dsl.Traversal) {
 		t.Has(Label, FieldSchemaFloat32, p.EQ(vc))
+	})
+}
+
+// MAC applies equality check predicate on the "mac" field. It's identical to MACEQ.
+func MAC(v schema.MAC) predicate.FieldType {
+	vc := v.String()
+	return predicate.FieldType(func(t *dsl.Traversal) {
+		t.Has(Label, FieldMAC, p.EQ(vc))
+	})
+}
+
+// UUID applies equality check predicate on the "uuid" field. It's identical to UUIDEQ.
+func UUID(v uuid.UUID) predicate.FieldType {
+	return predicate.FieldType(func(t *dsl.Traversal) {
+		t.Has(Label, FieldUUID, p.EQ(v))
 	})
 }
 
@@ -1962,6 +1986,90 @@ func OptionalUint64NotNil() predicate.FieldType {
 	})
 }
 
+// DurationEQ applies the EQ predicate on the "duration" field.
+func DurationEQ(v time.Duration) predicate.FieldType {
+	vc := int64(v)
+	return predicate.FieldType(func(t *dsl.Traversal) {
+		t.Has(Label, FieldDuration, p.EQ(vc))
+	})
+}
+
+// DurationNEQ applies the NEQ predicate on the "duration" field.
+func DurationNEQ(v time.Duration) predicate.FieldType {
+	vc := int64(v)
+	return predicate.FieldType(func(t *dsl.Traversal) {
+		t.Has(Label, FieldDuration, p.NEQ(vc))
+	})
+}
+
+// DurationIn applies the In predicate on the "duration" field.
+func DurationIn(vs ...time.Duration) predicate.FieldType {
+	v := make([]interface{}, len(vs))
+	for i := range v {
+		v[i] = int64(vs[i])
+	}
+	return predicate.FieldType(func(t *dsl.Traversal) {
+		t.Has(Label, FieldDuration, p.Within(v...))
+	})
+}
+
+// DurationNotIn applies the NotIn predicate on the "duration" field.
+func DurationNotIn(vs ...time.Duration) predicate.FieldType {
+	v := make([]interface{}, len(vs))
+	for i := range v {
+		v[i] = int64(vs[i])
+	}
+	return predicate.FieldType(func(t *dsl.Traversal) {
+		t.Has(Label, FieldDuration, p.Without(v...))
+	})
+}
+
+// DurationGT applies the GT predicate on the "duration" field.
+func DurationGT(v time.Duration) predicate.FieldType {
+	vc := int64(v)
+	return predicate.FieldType(func(t *dsl.Traversal) {
+		t.Has(Label, FieldDuration, p.GT(vc))
+	})
+}
+
+// DurationGTE applies the GTE predicate on the "duration" field.
+func DurationGTE(v time.Duration) predicate.FieldType {
+	vc := int64(v)
+	return predicate.FieldType(func(t *dsl.Traversal) {
+		t.Has(Label, FieldDuration, p.GTE(vc))
+	})
+}
+
+// DurationLT applies the LT predicate on the "duration" field.
+func DurationLT(v time.Duration) predicate.FieldType {
+	vc := int64(v)
+	return predicate.FieldType(func(t *dsl.Traversal) {
+		t.Has(Label, FieldDuration, p.LT(vc))
+	})
+}
+
+// DurationLTE applies the LTE predicate on the "duration" field.
+func DurationLTE(v time.Duration) predicate.FieldType {
+	vc := int64(v)
+	return predicate.FieldType(func(t *dsl.Traversal) {
+		t.Has(Label, FieldDuration, p.LTE(vc))
+	})
+}
+
+// DurationIsNil applies the IsNil predicate on the "duration" field.
+func DurationIsNil() predicate.FieldType {
+	return predicate.FieldType(func(t *dsl.Traversal) {
+		t.HasLabel(Label).HasNot(FieldDuration)
+	})
+}
+
+// DurationNotNil applies the NotNil predicate on the "duration" field.
+func DurationNotNil() predicate.FieldType {
+	return predicate.FieldType(func(t *dsl.Traversal) {
+		t.HasLabel(Label).Has(FieldDuration)
+	})
+}
+
 // StateEQ applies the EQ predicate on the "state" field.
 func StateEQ(v State) predicate.FieldType {
 	return predicate.FieldType(func(t *dsl.Traversal) {
@@ -2864,6 +2972,20 @@ func LinkNotNil() predicate.FieldType {
 	})
 }
 
+// LinkOtherIsNil applies the IsNil predicate on the "link_other" field.
+func LinkOtherIsNil() predicate.FieldType {
+	return predicate.FieldType(func(t *dsl.Traversal) {
+		t.HasLabel(Label).HasNot(FieldLinkOther)
+	})
+}
+
+// LinkOtherNotNil applies the NotNil predicate on the "link_other" field.
+func LinkOtherNotNil() predicate.FieldType {
+	return predicate.FieldType(func(t *dsl.Traversal) {
+		t.HasLabel(Label).Has(FieldLinkOther)
+	})
+}
+
 // NullLinkEQ applies the EQ predicate on the "null_link" field.
 func NullLinkEQ(v schema.Link) predicate.FieldType {
 	vc := v.String()
@@ -3716,7 +3838,193 @@ func RoleNotIn(vs ...role.Role) predicate.FieldType {
 	})
 }
 
-// And groups list of predicates with the AND operator between them.
+// MACEQ applies the EQ predicate on the "mac" field.
+func MACEQ(v schema.MAC) predicate.FieldType {
+	vc := v.String()
+	return predicate.FieldType(func(t *dsl.Traversal) {
+		t.Has(Label, FieldMAC, p.EQ(vc))
+	})
+}
+
+// MACNEQ applies the NEQ predicate on the "mac" field.
+func MACNEQ(v schema.MAC) predicate.FieldType {
+	vc := v.String()
+	return predicate.FieldType(func(t *dsl.Traversal) {
+		t.Has(Label, FieldMAC, p.NEQ(vc))
+	})
+}
+
+// MACIn applies the In predicate on the "mac" field.
+func MACIn(vs ...schema.MAC) predicate.FieldType {
+	v := make([]interface{}, len(vs))
+	for i := range v {
+		v[i] = vs[i].String()
+	}
+	return predicate.FieldType(func(t *dsl.Traversal) {
+		t.Has(Label, FieldMAC, p.Within(v...))
+	})
+}
+
+// MACNotIn applies the NotIn predicate on the "mac" field.
+func MACNotIn(vs ...schema.MAC) predicate.FieldType {
+	v := make([]interface{}, len(vs))
+	for i := range v {
+		v[i] = vs[i].String()
+	}
+	return predicate.FieldType(func(t *dsl.Traversal) {
+		t.Has(Label, FieldMAC, p.Without(v...))
+	})
+}
+
+// MACGT applies the GT predicate on the "mac" field.
+func MACGT(v schema.MAC) predicate.FieldType {
+	vc := v.String()
+	return predicate.FieldType(func(t *dsl.Traversal) {
+		t.Has(Label, FieldMAC, p.GT(vc))
+	})
+}
+
+// MACGTE applies the GTE predicate on the "mac" field.
+func MACGTE(v schema.MAC) predicate.FieldType {
+	vc := v.String()
+	return predicate.FieldType(func(t *dsl.Traversal) {
+		t.Has(Label, FieldMAC, p.GTE(vc))
+	})
+}
+
+// MACLT applies the LT predicate on the "mac" field.
+func MACLT(v schema.MAC) predicate.FieldType {
+	vc := v.String()
+	return predicate.FieldType(func(t *dsl.Traversal) {
+		t.Has(Label, FieldMAC, p.LT(vc))
+	})
+}
+
+// MACLTE applies the LTE predicate on the "mac" field.
+func MACLTE(v schema.MAC) predicate.FieldType {
+	vc := v.String()
+	return predicate.FieldType(func(t *dsl.Traversal) {
+		t.Has(Label, FieldMAC, p.LTE(vc))
+	})
+}
+
+// MACContains applies the Contains predicate on the "mac" field.
+func MACContains(v schema.MAC) predicate.FieldType {
+	vc := v.String()
+	return predicate.FieldType(func(t *dsl.Traversal) {
+		t.Has(Label, FieldMAC, p.Containing(vc))
+	})
+}
+
+// MACHasPrefix applies the HasPrefix predicate on the "mac" field.
+func MACHasPrefix(v schema.MAC) predicate.FieldType {
+	vc := v.String()
+	return predicate.FieldType(func(t *dsl.Traversal) {
+		t.Has(Label, FieldMAC, p.StartingWith(vc))
+	})
+}
+
+// MACHasSuffix applies the HasSuffix predicate on the "mac" field.
+func MACHasSuffix(v schema.MAC) predicate.FieldType {
+	vc := v.String()
+	return predicate.FieldType(func(t *dsl.Traversal) {
+		t.Has(Label, FieldMAC, p.EndingWith(vc))
+	})
+}
+
+// MACIsNil applies the IsNil predicate on the "mac" field.
+func MACIsNil() predicate.FieldType {
+	return predicate.FieldType(func(t *dsl.Traversal) {
+		t.HasLabel(Label).HasNot(FieldMAC)
+	})
+}
+
+// MACNotNil applies the NotNil predicate on the "mac" field.
+func MACNotNil() predicate.FieldType {
+	return predicate.FieldType(func(t *dsl.Traversal) {
+		t.HasLabel(Label).Has(FieldMAC)
+	})
+}
+
+// UUIDEQ applies the EQ predicate on the "uuid" field.
+func UUIDEQ(v uuid.UUID) predicate.FieldType {
+	return predicate.FieldType(func(t *dsl.Traversal) {
+		t.Has(Label, FieldUUID, p.EQ(v))
+	})
+}
+
+// UUIDNEQ applies the NEQ predicate on the "uuid" field.
+func UUIDNEQ(v uuid.UUID) predicate.FieldType {
+	return predicate.FieldType(func(t *dsl.Traversal) {
+		t.Has(Label, FieldUUID, p.NEQ(v))
+	})
+}
+
+// UUIDIn applies the In predicate on the "uuid" field.
+func UUIDIn(vs ...uuid.UUID) predicate.FieldType {
+	v := make([]interface{}, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.FieldType(func(t *dsl.Traversal) {
+		t.Has(Label, FieldUUID, p.Within(v...))
+	})
+}
+
+// UUIDNotIn applies the NotIn predicate on the "uuid" field.
+func UUIDNotIn(vs ...uuid.UUID) predicate.FieldType {
+	v := make([]interface{}, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.FieldType(func(t *dsl.Traversal) {
+		t.Has(Label, FieldUUID, p.Without(v...))
+	})
+}
+
+// UUIDGT applies the GT predicate on the "uuid" field.
+func UUIDGT(v uuid.UUID) predicate.FieldType {
+	return predicate.FieldType(func(t *dsl.Traversal) {
+		t.Has(Label, FieldUUID, p.GT(v))
+	})
+}
+
+// UUIDGTE applies the GTE predicate on the "uuid" field.
+func UUIDGTE(v uuid.UUID) predicate.FieldType {
+	return predicate.FieldType(func(t *dsl.Traversal) {
+		t.Has(Label, FieldUUID, p.GTE(v))
+	})
+}
+
+// UUIDLT applies the LT predicate on the "uuid" field.
+func UUIDLT(v uuid.UUID) predicate.FieldType {
+	return predicate.FieldType(func(t *dsl.Traversal) {
+		t.Has(Label, FieldUUID, p.LT(v))
+	})
+}
+
+// UUIDLTE applies the LTE predicate on the "uuid" field.
+func UUIDLTE(v uuid.UUID) predicate.FieldType {
+	return predicate.FieldType(func(t *dsl.Traversal) {
+		t.Has(Label, FieldUUID, p.LTE(v))
+	})
+}
+
+// UUIDIsNil applies the IsNil predicate on the "uuid" field.
+func UUIDIsNil() predicate.FieldType {
+	return predicate.FieldType(func(t *dsl.Traversal) {
+		t.HasLabel(Label).HasNot(FieldUUID)
+	})
+}
+
+// UUIDNotNil applies the NotNil predicate on the "uuid" field.
+func UUIDNotNil() predicate.FieldType {
+	return predicate.FieldType(func(t *dsl.Traversal) {
+		t.HasLabel(Label).Has(FieldUUID)
+	})
+}
+
+// And groups predicates with the AND operator between them.
 func And(predicates ...predicate.FieldType) predicate.FieldType {
 	return predicate.FieldType(func(tr *dsl.Traversal) {
 		trs := make([]interface{}, 0, len(predicates))
@@ -3729,7 +4037,7 @@ func And(predicates ...predicate.FieldType) predicate.FieldType {
 	})
 }
 
-// Or groups list of predicates with the OR operator between them.
+// Or groups predicates with the OR operator between them.
 func Or(predicates ...predicate.FieldType) predicate.FieldType {
 	return predicate.FieldType(func(tr *dsl.Traversal) {
 		trs := make([]interface{}, 0, len(predicates))

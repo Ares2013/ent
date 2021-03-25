@@ -7,7 +7,7 @@
 package user
 
 import (
-	"github.com/facebook/ent"
+	"entgo.io/ent"
 )
 
 const (
@@ -21,14 +21,12 @@ const (
 	FieldName = "name"
 	// FieldWorth holds the string denoting the worth field in the database.
 	FieldWorth = "worth"
-
 	// EdgeCards holds the string denoting the cards edge name in mutations.
 	EdgeCards = "cards"
 	// EdgeFriends holds the string denoting the friends edge name in mutations.
 	EdgeFriends = "friends"
 	// EdgeBestFriend holds the string denoting the best_friend edge name in mutations.
 	EdgeBestFriend = "best_friend"
-
 	// Table holds the table name of the user in the database.
 	Table = "users"
 	// CardsTable is the table the holds the cards relation/edge.
@@ -54,7 +52,8 @@ var Columns = []string{
 	FieldWorth,
 }
 
-// ForeignKeys holds the SQL foreign-keys that are owned by the User type.
+// ForeignKeys holds the SQL foreign-keys that are owned by the "users"
+// table and are not defined as standalone fields in the schema.
 var ForeignKeys = []string{
 	"user_best_friend",
 }
@@ -65,14 +64,29 @@ var (
 	FriendsPrimaryKey = []string{"user_id", "friend_id"}
 )
 
+// ValidColumn reports if the column name is valid (part of the table columns).
+func ValidColumn(column string) bool {
+	for i := range Columns {
+		if column == Columns[i] {
+			return true
+		}
+	}
+	for i := range ForeignKeys {
+		if column == ForeignKeys[i] {
+			return true
+		}
+	}
+	return false
+}
+
 // Note that the variables below are initialized by the runtime
 // package on the initialization of the application. Therefore,
 // it should be imported in the main as follows:
 //
-//	import _ "github.com/facebook/ent/entc/integration/hooks/ent/runtime"
+//	import _ "entgo.io/ent/entc/integration/hooks/ent/runtime"
 //
 var (
 	Hooks [1]ent.Hook
-	// DefaultVersion holds the default value on creation for the version field.
+	// DefaultVersion holds the default value on creation for the "version" field.
 	DefaultVersion int
 )

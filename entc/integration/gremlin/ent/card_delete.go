@@ -10,25 +10,24 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/facebook/ent/dialect/gremlin"
-	"github.com/facebook/ent/dialect/gremlin/graph/dsl"
-	"github.com/facebook/ent/dialect/gremlin/graph/dsl/__"
-	"github.com/facebook/ent/dialect/gremlin/graph/dsl/g"
-	"github.com/facebook/ent/entc/integration/gremlin/ent/card"
-	"github.com/facebook/ent/entc/integration/gremlin/ent/predicate"
+	"entgo.io/ent/dialect/gremlin"
+	"entgo.io/ent/dialect/gremlin/graph/dsl"
+	"entgo.io/ent/dialect/gremlin/graph/dsl/__"
+	"entgo.io/ent/dialect/gremlin/graph/dsl/g"
+	"entgo.io/ent/entc/integration/gremlin/ent/card"
+	"entgo.io/ent/entc/integration/gremlin/ent/predicate"
 )
 
 // CardDelete is the builder for deleting a Card entity.
 type CardDelete struct {
 	config
-	hooks      []Hook
-	mutation   *CardMutation
-	predicates []predicate.Card
+	hooks    []Hook
+	mutation *CardMutation
 }
 
-// Where adds a new predicate to the delete builder.
+// Where adds a new predicate to the CardDelete builder.
 func (cd *CardDelete) Where(ps ...predicate.Card) *CardDelete {
-	cd.predicates = append(cd.predicates, ps...)
+	cd.mutation.predicates = append(cd.mutation.predicates, ps...)
 	return cd
 }
 
@@ -81,7 +80,7 @@ func (cd *CardDelete) gremlinExec(ctx context.Context) (int, error) {
 
 func (cd *CardDelete) gremlin() *dsl.Traversal {
 	t := g.V().HasLabel(card.Label)
-	for _, p := range cd.predicates {
+	for _, p := range cd.mutation.predicates {
 		p(t)
 	}
 	return t.SideEffect(__.Drop()).Count()

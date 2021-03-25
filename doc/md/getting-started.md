@@ -4,23 +4,27 @@ title: Quick Introduction
 sidebar_label: Quick Introduction
 ---
 
-`ent` is a simple, yet powerful entity framework for Go built on SQL/Gremlin with the following principles:
-- Easily modeling your data as a graph structure.
-- Defining your schema as code.
+**ent** is a simple, yet powerful entity framework for Go, that makes it easy to build
+and maintain applications with large data-models and sticks with the following principles:
+
+- Easily model database schema as a graph structure.
+- Define schema as a programmatic Go code.
 - Static typing based on code generation.
-- Simplifying graph traversals.
+- Database queries and graph traversals are easy to write.
+- Simple to extend and customize using Go templates.
 
 <br/>
 
-![gopher-schema-as-code](https://entgo.io/assets/gopher-schema-as-code.png)
+![gopher-schema-as-code](https://entgo.io/images/assets/gopher-schema-as-code.png)
 
 ## Installation
 
 ```console
-go get github.com/facebook/ent/cmd/entc
+go get entgo.io/ent/cmd/ent
 ```
 
-After installing `entc` (the code generator for `ent`), you should have it in your `PATH`.
+After installing `ent` codegen tool, you should have it in your `PATH`.
+If you don't find it your path, you can also run: `go run entgo.io/ent/cmd/ent <command>`
 
 ## Setup A Go Environment
 
@@ -36,7 +40,7 @@ go mod init <project>
 Go to the root directory of your project, and run:
 
 ```console
-entc init User
+go run entgo.io/ent/cmd/ent init User
 ```
 The command above will generate the schema for `User` under `<project>/ent/schema/` directory:
 
@@ -45,7 +49,7 @@ The command above will generate the schema for `User` under `<project>/ent/schem
 
 package schema
 
-import "github.com/facebook/ent"
+import "entgo.io/ent"
 
 // User holds the schema definition for the User entity.
 type User struct {
@@ -70,8 +74,8 @@ Add 2 fields to the `User` schema:
 package schema
 
 import (
-	"github.com/facebook/ent"
-	"github.com/facebook/ent/schema/field"
+	"entgo.io/ent"
+	"entgo.io/ent/schema/field"
 )
 
 
@@ -86,7 +90,7 @@ func (User) Fields() []ent.Field {
 }
 ```
 
-Run `entc generate` from the root directory of the project, or use `go generate`:
+Run `go generate` from the root directory of the project as follows:
 
 ```go
 go generate ./ent
@@ -140,7 +144,7 @@ func main() {
 		log.Fatalf("failed opening connection to sqlite: %v", err)
 	}
 	defer client.Close()
-	// run the auto migration tool.
+	// Run the auto migration tool.
 	if err := client.Schema.Create(context.Background()); err != nil {
 		log.Fatalf("failed creating schema resources: %v", err)
 	}
@@ -156,7 +160,7 @@ func CreateUser(ctx context.Context, client *ent.Client) (*ent.User, error) {
 		SetName("a8m").
 		Save(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed creating user: %v", err)
+		return nil, fmt.Errorf("failed creating user: %w", err)
 	}
 	log.Println("user was created: ", u)
 	return u, nil
@@ -165,7 +169,7 @@ func CreateUser(ctx context.Context, client *ent.Client) (*ent.User, error) {
 
 ## Query Your Entities
 
-`entc` generates a package for each entity schema that contains its predicates, default values, validators
+`ent` generates a package for each entity schema that contains its predicates, default values, validators
 and additional information about storage elements (column names, primary keys, etc).
 
 ```go
@@ -186,7 +190,7 @@ func QueryUser(ctx context.Context, client *ent.Client) (*ent.User, error) {
 		// or more than 1 user returned.
 		Only(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed querying user: %v", err)
+		return nil, fmt.Errorf("failed querying user: %w", err)
 	}
 	log.Println("user returned: ", u)
 	return u, nil
@@ -197,11 +201,11 @@ func QueryUser(ctx context.Context, client *ent.Client) (*ent.User, error) {
 
 ## Add Your First Edge (Relation)
 In this part of the tutorial, we want to declare an edge (relation) to another entity in the schema.  
-Let's create 2 additional entities named `Car` and `Group` with a few fields. We use `entc`
+Let's create 2 additional entities named `Car` and `Group` with a few fields. We use `ent` CLI
 to generate the initial schemas:
 
 ```console
-entc init Car Group
+go run entgo.io/ent/cmd/ent init Car Group
 ```
 
 And then we add the rest of the fields manually:
@@ -209,8 +213,8 @@ And then we add the rest of the fields manually:
 import (
 	"regexp"
 
-	"github.com/facebook/ent"
-	"github.com/facebook/ent/schema/field"
+	"entgo.io/ent"
+	"entgo.io/ent/schema/field"
 )
 
 // Fields of the Car.
@@ -226,7 +230,7 @@ func (Car) Fields() []ent.Field {
 func (Group) Fields() []ent.Field {
 	return []ent.Field{
 		field.String("name").
-			// regexp validation for group name.
+			// Regexp validation for group name.
 			Match(regexp.MustCompile("[a-zA-Z_]+$")),
 	}
 }
@@ -235,7 +239,7 @@ func (Group) Fields() []ent.Field {
 Let's define our first relation. An edge from `User` to `Car` defining that a user
 can **have 1 or more** cars, but a car **has only one** owner (one-to-many relation).
 
-![er-user-cars](https://entgo.io/assets/re_user_cars.png)
+![er-user-cars](https://entgo.io/images/assets/re_user_cars.png)
 
 Let's add the `"cars"` edge to the `User` schema, and run `go generate ./ent`:
 
@@ -243,8 +247,8 @@ Let's add the `"cars"` edge to the `User` schema, and run `go generate ./ent`:
  import (
  	"log"
 
- 	"github.com/facebook/ent"
- 	"github.com/facebook/ent/schema/edge"
+ 	"entgo.io/ent"
+ 	"entgo.io/ent/schema/edge"
  )
 
  // Edges of the User.
@@ -258,28 +262,29 @@ Let's add the `"cars"` edge to the `User` schema, and run `go generate ./ent`:
 We continue our example by creating 2 cars and adding them to a user.
 ```go
 func CreateCars(ctx context.Context, client *ent.Client) (*ent.User, error) {
-	// creating new car with model "Tesla".
+	// Create a new car with model "Tesla".
 	tesla, err := client.Car.
 		Create().
 		SetModel("Tesla").
 		SetRegisteredAt(time.Now()).
 		Save(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed creating car: %v", err)
+		return nil, fmt.Errorf("failed creating car: %w", err)
 	}
+	log.Println("car was created: ", tesla)
 
-	// creating new car with model "Ford".
+	// Create a new car with model "Ford".
 	ford, err := client.Car.
 		Create().
 		SetModel("Ford").
 		SetRegisteredAt(time.Now()).
 		Save(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed creating car: %v", err)
+		return nil, fmt.Errorf("failed creating car: %w", err)
 	}
 	log.Println("car was created: ", ford)
 
-	// create a new user, and add it the 2 cars.
+	// Create a new user, and add it the 2 cars.
 	a8m, err := client.User.
 		Create().
 		SetAge(30).
@@ -287,7 +292,7 @@ func CreateCars(ctx context.Context, client *ent.Client) (*ent.User, error) {
 		AddCars(tesla, ford).
 		Save(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed creating user: %v", err)
+		return nil, fmt.Errorf("failed creating user: %w", err)
 	}
 	log.Println("user was created: ", a8m)
 	return a8m, nil
@@ -305,16 +310,16 @@ import (
 func QueryCars(ctx context.Context, a8m *ent.User) error {
 	cars, err := a8m.QueryCars().All(ctx)
 	if err != nil {
-		return fmt.Errorf("failed querying user cars: %v", err)
+		return fmt.Errorf("failed querying user cars: %w", err)
 	}
 	log.Println("returned cars:", cars)
 
-	// what about filtering specific cars.
+	// What about filtering specific cars.
 	ford, err := a8m.QueryCars().
 		Where(car.ModelEQ("Ford")).
 		Only(ctx)
 	if err != nil {
-		return fmt.Errorf("failed querying user cars: %v", err)
+		return fmt.Errorf("failed querying user cars: %w", err)
 	}
 	log.Println(ford)
 	return nil
@@ -326,7 +331,7 @@ Assume we have a `Car` object and we want to get its owner; the user that this c
 For this, we have another type of edge called "inverse edge" that is defined using the `edge.From`
 function.
 
-![er-cars-owner](https://entgo.io/assets/re_cars_owner.png)
+![er-cars-owner](https://entgo.io/images/assets/re_cars_owner.png)
 
 The new edge created in the diagram above is translucent, to emphasize that we don't create another
 edge in the database. It's just a back-reference to the real edge (relation).
@@ -338,14 +343,14 @@ in the `User` schema, and run `go generate ./ent`.
 import (
 	"log"
 
-	"github.com/facebook/ent"
-	"github.com/facebook/ent/schema/edge"
+	"entgo.io/ent"
+	"entgo.io/ent/schema/edge"
 )
 
 // Edges of the Car.
 func (Car) Edges() []ent.Edge {
 	return []ent.Edge{
-		// create an inverse-edge called "owner" of type `User`
+		// Create an inverse-edge called "owner" of type `User`
 	 	// and reference it to the "cars" edge (in User schema)
 	 	// explicitly using the `Ref` method.
 	 	edge.From("owner", User.Type).
@@ -360,6 +365,7 @@ We'll continue the user/cars example above by querying the inverse edge.
 
 ```go
 import (
+	"fmt"
 	"log"
 
 	"<project>/ent"
@@ -368,13 +374,13 @@ import (
 func QueryCarUsers(ctx context.Context, a8m *ent.User) error {
 	cars, err := a8m.QueryCars().All(ctx)
 	if err != nil {
-		return fmt.Errorf("failed querying user cars: %v", err)
+		return fmt.Errorf("failed querying user cars: %w", err)
 	}
-	// query the inverse edge.
+	// Query the inverse edge.
 	for _, ca := range cars {
 		owner, err := ca.QueryOwner().Only(ctx)
 		if err != nil {
-			return fmt.Errorf("failed querying car %q owner: %v", ca.Model, err)
+			return fmt.Errorf("failed querying car %q owner: %w", ca.Model, err)
 		}
 		log.Printf("car %q owner: %q\n", ca.Model, owner.Name)
 	}
@@ -386,7 +392,7 @@ func QueryCarUsers(ctx context.Context, a8m *ent.User) error {
 
 We'll continue our example by creating a M2M (many-to-many) relationship between users and groups.
 
-![er-group-users](https://entgo.io/assets/re_group_users.png)
+![er-group-users](https://entgo.io/images/assets/re_group_users.png)
 
 As you can see, each group entity can **have many** users, and a user can **be connected to many** groups;
 a simple "many-to-many" relationship. In the above illustration, the `Group` schema is the owner
@@ -399,8 +405,8 @@ relationship named `groups`. Let's define this relationship in our schemas:
 	 import (
 		"log"
 	
-		"github.com/facebook/ent"
-		"github.com/facebook/ent/schema/edge"
+		"entgo.io/ent"
+		"entgo.io/ent/schema/edge"
 	 )
 	
 	 // Edges of the Group.
@@ -416,15 +422,15 @@ relationship named `groups`. Let's define this relationship in our schemas:
 	 import (
 	 	"log"
 	
-	 	"github.com/facebook/ent"
-	 	"github.com/facebook/ent/schema/edge"
+	 	"entgo.io/ent"
+	 	"entgo.io/ent/schema/edge"
 	 )
 	
 	 // Edges of the User.
 	 func (User) Edges() []ent.Edge {
 	 	return []ent.Edge{
 			edge.To("cars", Car.Type),
-		 	// create an inverse-edge called "groups" of type `Group`
+		 	// Create an inverse-edge called "groups" of type `Group`
 		 	// and reference it to the "users" edge (in Group schema)
 		 	// explicitly using the `Ref` method.
 			edge.From("groups", Group.Type).
@@ -433,7 +439,7 @@ relationship named `groups`. Let's define this relationship in our schemas:
 	 }
 	```
 
-We run `entc` on the schema directory to re-generate the assets.
+We run `ent` on the schema directory to re-generate the assets.
 ```console
 go generate ./ent
 ```
@@ -443,13 +449,13 @@ go generate ./ent
 In order to run our first graph traversal, we need to generate some data (nodes and edges, or in other words, 
 entities and relations). Let's create the following graph using the framework:
 
-![re-graph](https://entgo.io/assets/re_graph_getting_started.png)
+![re-graph](https://entgo.io/images/assets/re_graph_getting_started.png)
 
 
 ```go
 
 func CreateGraph(ctx context.Context, client *ent.Client) error {
-	// first, create the users.
+	// First, create the users.
 	a8m, err := client.User.
 		Create().
 		SetAge(30).
@@ -466,7 +472,7 @@ func CreateGraph(ctx context.Context, client *ent.Client) error {
 	if err != nil {
 		return err
 	}
-	// then, create the cars, and attach them to the users in the creation.
+	// Then, create the cars, and attach them to the users in the creation.
 	_, err = client.Car.
 		Create().
 		SetModel("Tesla").
@@ -494,7 +500,7 @@ func CreateGraph(ctx context.Context, client *ent.Client) error {
 	if err != nil {
 		return err
 	}
-	// create the groups, and add their users in the creation.
+	// Create the groups, and add their users in the creation.
 	_, err = client.Group.
 		Create().
 		SetName("GitLab").
@@ -536,7 +542,7 @@ Now when we have a graph with data, we can run a few queries on it:
 			QueryCars().                 // (Car(Model=Tesla, RegisteredAt=<Time>), Car(Model=Mazda, RegisteredAt=<Time>),)
 			All(ctx)
 		if err != nil {
-			return fmt.Errorf("failed getting cars: %v", err)
+			return fmt.Errorf("failed getting cars: %w", err)
 		}
 		log.Println("cars returned:", cars)
 		// Output: (Car(Model=Tesla, RegisteredAt=<Time>), Car(Model=Mazda, RegisteredAt=<Time>),)
@@ -574,7 +580,7 @@ Now when we have a graph with data, we can run a few queries on it:
 				). 								//
 				All(ctx)
 		if err != nil {
-			return fmt.Errorf("failed getting cars: %v", err)
+			return fmt.Errorf("failed getting cars: %w", err)
 		}
 		log.Println("cars returned:", cars)
 		// Output: (Car(Model=Tesla, RegisteredAt=<Time>), Car(Model=Ford, RegisteredAt=<Time>),)
@@ -598,7 +604,7 @@ Now when we have a graph with data, we can run a few queries on it:
     		Where(group.HasUsers()).
     		All(ctx)
     	if err != nil {
-    		return fmt.Errorf("failed getting groups: %v", err)
+    		return fmt.Errorf("failed getting groups: %w", err)
     	}
     	log.Println("groups returned:", groups)
     	// Output: (Group(Name=GitHub), Group(Name=GitLab),)
@@ -606,4 +612,4 @@ Now when we have a graph with data, we can run a few queries on it:
     }
     ```
 
-The full example exists in [GitHub](https://github.com/facebook/ent/tree/master/examples/start).
+The full example exists in [GitHub](https://github.com/ent/ent/tree/master/examples/start).

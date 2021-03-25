@@ -10,39 +10,38 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/facebook/ent/dialect/sql"
-	"github.com/facebook/ent/dialect/sql/sqlgraph"
-	"github.com/facebook/ent/entc/integration/ent/card"
-	"github.com/facebook/ent/entc/integration/ent/file"
-	"github.com/facebook/ent/entc/integration/ent/group"
-	"github.com/facebook/ent/entc/integration/ent/pet"
-	"github.com/facebook/ent/entc/integration/ent/predicate"
-	"github.com/facebook/ent/entc/integration/ent/user"
-	"github.com/facebook/ent/schema/field"
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/entc/integration/ent/card"
+	"entgo.io/ent/entc/integration/ent/file"
+	"entgo.io/ent/entc/integration/ent/group"
+	"entgo.io/ent/entc/integration/ent/pet"
+	"entgo.io/ent/entc/integration/ent/predicate"
+	"entgo.io/ent/entc/integration/ent/user"
+	"entgo.io/ent/schema/field"
 )
 
 // UserUpdate is the builder for updating User entities.
 type UserUpdate struct {
 	config
-	hooks      []Hook
-	mutation   *UserMutation
-	predicates []predicate.User
+	hooks    []Hook
+	mutation *UserMutation
 }
 
-// Where adds a new predicate for the builder.
+// Where adds a new predicate for the UserUpdate builder.
 func (uu *UserUpdate) Where(ps ...predicate.User) *UserUpdate {
-	uu.predicates = append(uu.predicates, ps...)
+	uu.mutation.predicates = append(uu.mutation.predicates, ps...)
 	return uu
 }
 
-// SetOptionalInt sets the optional_int field.
+// SetOptionalInt sets the "optional_int" field.
 func (uu *UserUpdate) SetOptionalInt(i int) *UserUpdate {
 	uu.mutation.ResetOptionalInt()
 	uu.mutation.SetOptionalInt(i)
 	return uu
 }
 
-// SetNillableOptionalInt sets the optional_int field if the given value is not nil.
+// SetNillableOptionalInt sets the "optional_int" field if the given value is not nil.
 func (uu *UserUpdate) SetNillableOptionalInt(i *int) *UserUpdate {
 	if i != nil {
 		uu.SetOptionalInt(*i)
@@ -50,44 +49,44 @@ func (uu *UserUpdate) SetNillableOptionalInt(i *int) *UserUpdate {
 	return uu
 }
 
-// AddOptionalInt adds i to optional_int.
+// AddOptionalInt adds i to the "optional_int" field.
 func (uu *UserUpdate) AddOptionalInt(i int) *UserUpdate {
 	uu.mutation.AddOptionalInt(i)
 	return uu
 }
 
-// ClearOptionalInt clears the value of optional_int.
+// ClearOptionalInt clears the value of the "optional_int" field.
 func (uu *UserUpdate) ClearOptionalInt() *UserUpdate {
 	uu.mutation.ClearOptionalInt()
 	return uu
 }
 
-// SetAge sets the age field.
+// SetAge sets the "age" field.
 func (uu *UserUpdate) SetAge(i int) *UserUpdate {
 	uu.mutation.ResetAge()
 	uu.mutation.SetAge(i)
 	return uu
 }
 
-// AddAge adds i to age.
+// AddAge adds i to the "age" field.
 func (uu *UserUpdate) AddAge(i int) *UserUpdate {
 	uu.mutation.AddAge(i)
 	return uu
 }
 
-// SetName sets the name field.
+// SetName sets the "name" field.
 func (uu *UserUpdate) SetName(s string) *UserUpdate {
 	uu.mutation.SetName(s)
 	return uu
 }
 
-// SetLast sets the last field.
+// SetLast sets the "last" field.
 func (uu *UserUpdate) SetLast(s string) *UserUpdate {
 	uu.mutation.SetLast(s)
 	return uu
 }
 
-// SetNillableLast sets the last field if the given value is not nil.
+// SetNillableLast sets the "last" field if the given value is not nil.
 func (uu *UserUpdate) SetNillableLast(s *string) *UserUpdate {
 	if s != nil {
 		uu.SetLast(*s)
@@ -95,13 +94,13 @@ func (uu *UserUpdate) SetNillableLast(s *string) *UserUpdate {
 	return uu
 }
 
-// SetNickname sets the nickname field.
+// SetNickname sets the "nickname" field.
 func (uu *UserUpdate) SetNickname(s string) *UserUpdate {
 	uu.mutation.SetNickname(s)
 	return uu
 }
 
-// SetNillableNickname sets the nickname field if the given value is not nil.
+// SetNillableNickname sets the "nickname" field if the given value is not nil.
 func (uu *UserUpdate) SetNillableNickname(s *string) *UserUpdate {
 	if s != nil {
 		uu.SetNickname(*s)
@@ -109,19 +108,39 @@ func (uu *UserUpdate) SetNillableNickname(s *string) *UserUpdate {
 	return uu
 }
 
-// ClearNickname clears the value of nickname.
+// ClearNickname clears the value of the "nickname" field.
 func (uu *UserUpdate) ClearNickname() *UserUpdate {
 	uu.mutation.ClearNickname()
 	return uu
 }
 
-// SetPhone sets the phone field.
+// SetAddress sets the "address" field.
+func (uu *UserUpdate) SetAddress(s string) *UserUpdate {
+	uu.mutation.SetAddress(s)
+	return uu
+}
+
+// SetNillableAddress sets the "address" field if the given value is not nil.
+func (uu *UserUpdate) SetNillableAddress(s *string) *UserUpdate {
+	if s != nil {
+		uu.SetAddress(*s)
+	}
+	return uu
+}
+
+// ClearAddress clears the value of the "address" field.
+func (uu *UserUpdate) ClearAddress() *UserUpdate {
+	uu.mutation.ClearAddress()
+	return uu
+}
+
+// SetPhone sets the "phone" field.
 func (uu *UserUpdate) SetPhone(s string) *UserUpdate {
 	uu.mutation.SetPhone(s)
 	return uu
 }
 
-// SetNillablePhone sets the phone field if the given value is not nil.
+// SetNillablePhone sets the "phone" field if the given value is not nil.
 func (uu *UserUpdate) SetNillablePhone(s *string) *UserUpdate {
 	if s != nil {
 		uu.SetPhone(*s)
@@ -129,19 +148,19 @@ func (uu *UserUpdate) SetNillablePhone(s *string) *UserUpdate {
 	return uu
 }
 
-// ClearPhone clears the value of phone.
+// ClearPhone clears the value of the "phone" field.
 func (uu *UserUpdate) ClearPhone() *UserUpdate {
 	uu.mutation.ClearPhone()
 	return uu
 }
 
-// SetPassword sets the password field.
+// SetPassword sets the "password" field.
 func (uu *UserUpdate) SetPassword(s string) *UserUpdate {
 	uu.mutation.SetPassword(s)
 	return uu
 }
 
-// SetNillablePassword sets the password field if the given value is not nil.
+// SetNillablePassword sets the "password" field if the given value is not nil.
 func (uu *UserUpdate) SetNillablePassword(s *string) *UserUpdate {
 	if s != nil {
 		uu.SetPassword(*s)
@@ -149,19 +168,19 @@ func (uu *UserUpdate) SetNillablePassword(s *string) *UserUpdate {
 	return uu
 }
 
-// ClearPassword clears the value of password.
+// ClearPassword clears the value of the "password" field.
 func (uu *UserUpdate) ClearPassword() *UserUpdate {
 	uu.mutation.ClearPassword()
 	return uu
 }
 
-// SetRole sets the role field.
+// SetRole sets the "role" field.
 func (uu *UserUpdate) SetRole(u user.Role) *UserUpdate {
 	uu.mutation.SetRole(u)
 	return uu
 }
 
-// SetNillableRole sets the role field if the given value is not nil.
+// SetNillableRole sets the "role" field if the given value is not nil.
 func (uu *UserUpdate) SetNillableRole(u *user.Role) *UserUpdate {
 	if u != nil {
 		uu.SetRole(*u)
@@ -169,13 +188,13 @@ func (uu *UserUpdate) SetNillableRole(u *user.Role) *UserUpdate {
 	return uu
 }
 
-// SetSSOCert sets the SSOCert field.
+// SetSSOCert sets the "SSOCert" field.
 func (uu *UserUpdate) SetSSOCert(s string) *UserUpdate {
 	uu.mutation.SetSSOCert(s)
 	return uu
 }
 
-// SetNillableSSOCert sets the SSOCert field if the given value is not nil.
+// SetNillableSSOCert sets the "SSOCert" field if the given value is not nil.
 func (uu *UserUpdate) SetNillableSSOCert(s *string) *UserUpdate {
 	if s != nil {
 		uu.SetSSOCert(*s)
@@ -183,19 +202,19 @@ func (uu *UserUpdate) SetNillableSSOCert(s *string) *UserUpdate {
 	return uu
 }
 
-// ClearSSOCert clears the value of SSOCert.
+// ClearSSOCert clears the value of the "SSOCert" field.
 func (uu *UserUpdate) ClearSSOCert() *UserUpdate {
 	uu.mutation.ClearSSOCert()
 	return uu
 }
 
-// SetCardID sets the card edge to Card by id.
+// SetCardID sets the "card" edge to the Card entity by ID.
 func (uu *UserUpdate) SetCardID(id int) *UserUpdate {
 	uu.mutation.SetCardID(id)
 	return uu
 }
 
-// SetNillableCardID sets the card edge to Card by id if the given value is not nil.
+// SetNillableCardID sets the "card" edge to the Card entity by ID if the given value is not nil.
 func (uu *UserUpdate) SetNillableCardID(id *int) *UserUpdate {
 	if id != nil {
 		uu = uu.SetCardID(*id)
@@ -203,18 +222,18 @@ func (uu *UserUpdate) SetNillableCardID(id *int) *UserUpdate {
 	return uu
 }
 
-// SetCard sets the card edge to Card.
+// SetCard sets the "card" edge to the Card entity.
 func (uu *UserUpdate) SetCard(c *Card) *UserUpdate {
 	return uu.SetCardID(c.ID)
 }
 
-// AddPetIDs adds the pets edge to Pet by ids.
+// AddPetIDs adds the "pets" edge to the Pet entity by IDs.
 func (uu *UserUpdate) AddPetIDs(ids ...int) *UserUpdate {
 	uu.mutation.AddPetIDs(ids...)
 	return uu
 }
 
-// AddPets adds the pets edges to Pet.
+// AddPets adds the "pets" edges to the Pet entity.
 func (uu *UserUpdate) AddPets(p ...*Pet) *UserUpdate {
 	ids := make([]int, len(p))
 	for i := range p {
@@ -223,13 +242,13 @@ func (uu *UserUpdate) AddPets(p ...*Pet) *UserUpdate {
 	return uu.AddPetIDs(ids...)
 }
 
-// AddFileIDs adds the files edge to File by ids.
+// AddFileIDs adds the "files" edge to the File entity by IDs.
 func (uu *UserUpdate) AddFileIDs(ids ...int) *UserUpdate {
 	uu.mutation.AddFileIDs(ids...)
 	return uu
 }
 
-// AddFiles adds the files edges to File.
+// AddFiles adds the "files" edges to the File entity.
 func (uu *UserUpdate) AddFiles(f ...*File) *UserUpdate {
 	ids := make([]int, len(f))
 	for i := range f {
@@ -238,13 +257,13 @@ func (uu *UserUpdate) AddFiles(f ...*File) *UserUpdate {
 	return uu.AddFileIDs(ids...)
 }
 
-// AddGroupIDs adds the groups edge to Group by ids.
+// AddGroupIDs adds the "groups" edge to the Group entity by IDs.
 func (uu *UserUpdate) AddGroupIDs(ids ...int) *UserUpdate {
 	uu.mutation.AddGroupIDs(ids...)
 	return uu
 }
 
-// AddGroups adds the groups edges to Group.
+// AddGroups adds the "groups" edges to the Group entity.
 func (uu *UserUpdate) AddGroups(g ...*Group) *UserUpdate {
 	ids := make([]int, len(g))
 	for i := range g {
@@ -253,13 +272,13 @@ func (uu *UserUpdate) AddGroups(g ...*Group) *UserUpdate {
 	return uu.AddGroupIDs(ids...)
 }
 
-// AddFriendIDs adds the friends edge to User by ids.
+// AddFriendIDs adds the "friends" edge to the User entity by IDs.
 func (uu *UserUpdate) AddFriendIDs(ids ...int) *UserUpdate {
 	uu.mutation.AddFriendIDs(ids...)
 	return uu
 }
 
-// AddFriends adds the friends edges to User.
+// AddFriends adds the "friends" edges to the User entity.
 func (uu *UserUpdate) AddFriends(u ...*User) *UserUpdate {
 	ids := make([]int, len(u))
 	for i := range u {
@@ -268,13 +287,13 @@ func (uu *UserUpdate) AddFriends(u ...*User) *UserUpdate {
 	return uu.AddFriendIDs(ids...)
 }
 
-// AddFollowerIDs adds the followers edge to User by ids.
+// AddFollowerIDs adds the "followers" edge to the User entity by IDs.
 func (uu *UserUpdate) AddFollowerIDs(ids ...int) *UserUpdate {
 	uu.mutation.AddFollowerIDs(ids...)
 	return uu
 }
 
-// AddFollowers adds the followers edges to User.
+// AddFollowers adds the "followers" edges to the User entity.
 func (uu *UserUpdate) AddFollowers(u ...*User) *UserUpdate {
 	ids := make([]int, len(u))
 	for i := range u {
@@ -283,13 +302,13 @@ func (uu *UserUpdate) AddFollowers(u ...*User) *UserUpdate {
 	return uu.AddFollowerIDs(ids...)
 }
 
-// AddFollowingIDs adds the following edge to User by ids.
+// AddFollowingIDs adds the "following" edge to the User entity by IDs.
 func (uu *UserUpdate) AddFollowingIDs(ids ...int) *UserUpdate {
 	uu.mutation.AddFollowingIDs(ids...)
 	return uu
 }
 
-// AddFollowing adds the following edges to User.
+// AddFollowing adds the "following" edges to the User entity.
 func (uu *UserUpdate) AddFollowing(u ...*User) *UserUpdate {
 	ids := make([]int, len(u))
 	for i := range u {
@@ -298,13 +317,13 @@ func (uu *UserUpdate) AddFollowing(u ...*User) *UserUpdate {
 	return uu.AddFollowingIDs(ids...)
 }
 
-// SetTeamID sets the team edge to Pet by id.
+// SetTeamID sets the "team" edge to the Pet entity by ID.
 func (uu *UserUpdate) SetTeamID(id int) *UserUpdate {
 	uu.mutation.SetTeamID(id)
 	return uu
 }
 
-// SetNillableTeamID sets the team edge to Pet by id if the given value is not nil.
+// SetNillableTeamID sets the "team" edge to the Pet entity by ID if the given value is not nil.
 func (uu *UserUpdate) SetNillableTeamID(id *int) *UserUpdate {
 	if id != nil {
 		uu = uu.SetTeamID(*id)
@@ -312,18 +331,18 @@ func (uu *UserUpdate) SetNillableTeamID(id *int) *UserUpdate {
 	return uu
 }
 
-// SetTeam sets the team edge to Pet.
+// SetTeam sets the "team" edge to the Pet entity.
 func (uu *UserUpdate) SetTeam(p *Pet) *UserUpdate {
 	return uu.SetTeamID(p.ID)
 }
 
-// SetSpouseID sets the spouse edge to User by id.
+// SetSpouseID sets the "spouse" edge to the User entity by ID.
 func (uu *UserUpdate) SetSpouseID(id int) *UserUpdate {
 	uu.mutation.SetSpouseID(id)
 	return uu
 }
 
-// SetNillableSpouseID sets the spouse edge to User by id if the given value is not nil.
+// SetNillableSpouseID sets the "spouse" edge to the User entity by ID if the given value is not nil.
 func (uu *UserUpdate) SetNillableSpouseID(id *int) *UserUpdate {
 	if id != nil {
 		uu = uu.SetSpouseID(*id)
@@ -331,18 +350,18 @@ func (uu *UserUpdate) SetNillableSpouseID(id *int) *UserUpdate {
 	return uu
 }
 
-// SetSpouse sets the spouse edge to User.
+// SetSpouse sets the "spouse" edge to the User entity.
 func (uu *UserUpdate) SetSpouse(u *User) *UserUpdate {
 	return uu.SetSpouseID(u.ID)
 }
 
-// AddChildIDs adds the children edge to User by ids.
+// AddChildIDs adds the "children" edge to the User entity by IDs.
 func (uu *UserUpdate) AddChildIDs(ids ...int) *UserUpdate {
 	uu.mutation.AddChildIDs(ids...)
 	return uu
 }
 
-// AddChildren adds the children edges to User.
+// AddChildren adds the "children" edges to the User entity.
 func (uu *UserUpdate) AddChildren(u ...*User) *UserUpdate {
 	ids := make([]int, len(u))
 	for i := range u {
@@ -351,13 +370,13 @@ func (uu *UserUpdate) AddChildren(u ...*User) *UserUpdate {
 	return uu.AddChildIDs(ids...)
 }
 
-// SetParentID sets the parent edge to User by id.
+// SetParentID sets the "parent" edge to the User entity by ID.
 func (uu *UserUpdate) SetParentID(id int) *UserUpdate {
 	uu.mutation.SetParentID(id)
 	return uu
 }
 
-// SetNillableParentID sets the parent edge to User by id if the given value is not nil.
+// SetNillableParentID sets the "parent" edge to the User entity by ID if the given value is not nil.
 func (uu *UserUpdate) SetNillableParentID(id *int) *UserUpdate {
 	if id != nil {
 		uu = uu.SetParentID(*id)
@@ -365,7 +384,7 @@ func (uu *UserUpdate) SetNillableParentID(id *int) *UserUpdate {
 	return uu
 }
 
-// SetParent sets the parent edge to User.
+// SetParent sets the "parent" edge to the User entity.
 func (uu *UserUpdate) SetParent(u *User) *UserUpdate {
 	return uu.SetParentID(u.ID)
 }
@@ -375,19 +394,25 @@ func (uu *UserUpdate) Mutation() *UserMutation {
 	return uu.mutation
 }
 
-// ClearCard clears the card edge to Card.
+// ClearCard clears the "card" edge to the Card entity.
 func (uu *UserUpdate) ClearCard() *UserUpdate {
 	uu.mutation.ClearCard()
 	return uu
 }
 
-// RemovePetIDs removes the pets edge to Pet by ids.
+// ClearPets clears all "pets" edges to the Pet entity.
+func (uu *UserUpdate) ClearPets() *UserUpdate {
+	uu.mutation.ClearPets()
+	return uu
+}
+
+// RemovePetIDs removes the "pets" edge to Pet entities by IDs.
 func (uu *UserUpdate) RemovePetIDs(ids ...int) *UserUpdate {
 	uu.mutation.RemovePetIDs(ids...)
 	return uu
 }
 
-// RemovePets removes pets edges to Pet.
+// RemovePets removes "pets" edges to Pet entities.
 func (uu *UserUpdate) RemovePets(p ...*Pet) *UserUpdate {
 	ids := make([]int, len(p))
 	for i := range p {
@@ -396,13 +421,19 @@ func (uu *UserUpdate) RemovePets(p ...*Pet) *UserUpdate {
 	return uu.RemovePetIDs(ids...)
 }
 
-// RemoveFileIDs removes the files edge to File by ids.
+// ClearFiles clears all "files" edges to the File entity.
+func (uu *UserUpdate) ClearFiles() *UserUpdate {
+	uu.mutation.ClearFiles()
+	return uu
+}
+
+// RemoveFileIDs removes the "files" edge to File entities by IDs.
 func (uu *UserUpdate) RemoveFileIDs(ids ...int) *UserUpdate {
 	uu.mutation.RemoveFileIDs(ids...)
 	return uu
 }
 
-// RemoveFiles removes files edges to File.
+// RemoveFiles removes "files" edges to File entities.
 func (uu *UserUpdate) RemoveFiles(f ...*File) *UserUpdate {
 	ids := make([]int, len(f))
 	for i := range f {
@@ -411,13 +442,19 @@ func (uu *UserUpdate) RemoveFiles(f ...*File) *UserUpdate {
 	return uu.RemoveFileIDs(ids...)
 }
 
-// RemoveGroupIDs removes the groups edge to Group by ids.
+// ClearGroups clears all "groups" edges to the Group entity.
+func (uu *UserUpdate) ClearGroups() *UserUpdate {
+	uu.mutation.ClearGroups()
+	return uu
+}
+
+// RemoveGroupIDs removes the "groups" edge to Group entities by IDs.
 func (uu *UserUpdate) RemoveGroupIDs(ids ...int) *UserUpdate {
 	uu.mutation.RemoveGroupIDs(ids...)
 	return uu
 }
 
-// RemoveGroups removes groups edges to Group.
+// RemoveGroups removes "groups" edges to Group entities.
 func (uu *UserUpdate) RemoveGroups(g ...*Group) *UserUpdate {
 	ids := make([]int, len(g))
 	for i := range g {
@@ -426,13 +463,19 @@ func (uu *UserUpdate) RemoveGroups(g ...*Group) *UserUpdate {
 	return uu.RemoveGroupIDs(ids...)
 }
 
-// RemoveFriendIDs removes the friends edge to User by ids.
+// ClearFriends clears all "friends" edges to the User entity.
+func (uu *UserUpdate) ClearFriends() *UserUpdate {
+	uu.mutation.ClearFriends()
+	return uu
+}
+
+// RemoveFriendIDs removes the "friends" edge to User entities by IDs.
 func (uu *UserUpdate) RemoveFriendIDs(ids ...int) *UserUpdate {
 	uu.mutation.RemoveFriendIDs(ids...)
 	return uu
 }
 
-// RemoveFriends removes friends edges to User.
+// RemoveFriends removes "friends" edges to User entities.
 func (uu *UserUpdate) RemoveFriends(u ...*User) *UserUpdate {
 	ids := make([]int, len(u))
 	for i := range u {
@@ -441,13 +484,19 @@ func (uu *UserUpdate) RemoveFriends(u ...*User) *UserUpdate {
 	return uu.RemoveFriendIDs(ids...)
 }
 
-// RemoveFollowerIDs removes the followers edge to User by ids.
+// ClearFollowers clears all "followers" edges to the User entity.
+func (uu *UserUpdate) ClearFollowers() *UserUpdate {
+	uu.mutation.ClearFollowers()
+	return uu
+}
+
+// RemoveFollowerIDs removes the "followers" edge to User entities by IDs.
 func (uu *UserUpdate) RemoveFollowerIDs(ids ...int) *UserUpdate {
 	uu.mutation.RemoveFollowerIDs(ids...)
 	return uu
 }
 
-// RemoveFollowers removes followers edges to User.
+// RemoveFollowers removes "followers" edges to User entities.
 func (uu *UserUpdate) RemoveFollowers(u ...*User) *UserUpdate {
 	ids := make([]int, len(u))
 	for i := range u {
@@ -456,13 +505,19 @@ func (uu *UserUpdate) RemoveFollowers(u ...*User) *UserUpdate {
 	return uu.RemoveFollowerIDs(ids...)
 }
 
-// RemoveFollowingIDs removes the following edge to User by ids.
+// ClearFollowing clears all "following" edges to the User entity.
+func (uu *UserUpdate) ClearFollowing() *UserUpdate {
+	uu.mutation.ClearFollowing()
+	return uu
+}
+
+// RemoveFollowingIDs removes the "following" edge to User entities by IDs.
 func (uu *UserUpdate) RemoveFollowingIDs(ids ...int) *UserUpdate {
 	uu.mutation.RemoveFollowingIDs(ids...)
 	return uu
 }
 
-// RemoveFollowing removes following edges to User.
+// RemoveFollowing removes "following" edges to User entities.
 func (uu *UserUpdate) RemoveFollowing(u ...*User) *UserUpdate {
 	ids := make([]int, len(u))
 	for i := range u {
@@ -471,25 +526,31 @@ func (uu *UserUpdate) RemoveFollowing(u ...*User) *UserUpdate {
 	return uu.RemoveFollowingIDs(ids...)
 }
 
-// ClearTeam clears the team edge to Pet.
+// ClearTeam clears the "team" edge to the Pet entity.
 func (uu *UserUpdate) ClearTeam() *UserUpdate {
 	uu.mutation.ClearTeam()
 	return uu
 }
 
-// ClearSpouse clears the spouse edge to User.
+// ClearSpouse clears the "spouse" edge to the User entity.
 func (uu *UserUpdate) ClearSpouse() *UserUpdate {
 	uu.mutation.ClearSpouse()
 	return uu
 }
 
-// RemoveChildIDs removes the children edge to User by ids.
+// ClearChildren clears all "children" edges to the User entity.
+func (uu *UserUpdate) ClearChildren() *UserUpdate {
+	uu.mutation.ClearChildren()
+	return uu
+}
+
+// RemoveChildIDs removes the "children" edge to User entities by IDs.
 func (uu *UserUpdate) RemoveChildIDs(ids ...int) *UserUpdate {
 	uu.mutation.RemoveChildIDs(ids...)
 	return uu
 }
 
-// RemoveChildren removes children edges to User.
+// RemoveChildren removes "children" edges to User entities.
 func (uu *UserUpdate) RemoveChildren(u ...*User) *UserUpdate {
 	ids := make([]int, len(u))
 	for i := range u {
@@ -498,36 +559,31 @@ func (uu *UserUpdate) RemoveChildren(u ...*User) *UserUpdate {
 	return uu.RemoveChildIDs(ids...)
 }
 
-// ClearParent clears the parent edge to User.
+// ClearParent clears the "parent" edge to the User entity.
 func (uu *UserUpdate) ClearParent() *UserUpdate {
 	uu.mutation.ClearParent()
 	return uu
 }
 
-// Save executes the query and returns the number of rows/vertices matched by this operation.
+// Save executes the query and returns the number of nodes affected by the update operation.
 func (uu *UserUpdate) Save(ctx context.Context) (int, error) {
-	if v, ok := uu.mutation.OptionalInt(); ok {
-		if err := user.OptionalIntValidator(v); err != nil {
-			return 0, &ValidationError{Name: "optional_int", err: fmt.Errorf("ent: validator failed for field \"optional_int\": %w", err)}
-		}
-	}
-	if v, ok := uu.mutation.Role(); ok {
-		if err := user.RoleValidator(v); err != nil {
-			return 0, &ValidationError{Name: "role", err: fmt.Errorf("ent: validator failed for field \"role\": %w", err)}
-		}
-	}
-
 	var (
 		err      error
 		affected int
 	)
 	if len(uu.hooks) == 0 {
+		if err = uu.check(); err != nil {
+			return 0, err
+		}
 		affected, err = uu.sqlSave(ctx)
 	} else {
 		var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 			mutation, ok := m.(*UserMutation)
 			if !ok {
 				return nil, fmt.Errorf("unexpected mutation type %T", m)
+			}
+			if err = uu.check(); err != nil {
+				return 0, err
 			}
 			uu.mutation = mutation
 			affected, err = uu.sqlSave(ctx)
@@ -566,6 +622,21 @@ func (uu *UserUpdate) ExecX(ctx context.Context) {
 	}
 }
 
+// check runs all checks and user-defined validators on the builder.
+func (uu *UserUpdate) check() error {
+	if v, ok := uu.mutation.OptionalInt(); ok {
+		if err := user.OptionalIntValidator(v); err != nil {
+			return &ValidationError{Name: "optional_int", err: fmt.Errorf("ent: validator failed for field \"optional_int\": %w", err)}
+		}
+	}
+	if v, ok := uu.mutation.Role(); ok {
+		if err := user.RoleValidator(v); err != nil {
+			return &ValidationError{Name: "role", err: fmt.Errorf("ent: validator failed for field \"role\": %w", err)}
+		}
+	}
+	return nil
+}
+
 func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	_spec := &sqlgraph.UpdateSpec{
 		Node: &sqlgraph.NodeSpec{
@@ -577,7 +648,7 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			},
 		},
 	}
-	if ps := uu.predicates; len(ps) > 0 {
+	if ps := uu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
@@ -643,6 +714,19 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
 			Type:   field.TypeString,
 			Column: user.FieldNickname,
+		})
+	}
+	if value, ok := uu.mutation.Address(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: user.FieldAddress,
+		})
+	}
+	if uu.mutation.AddressCleared() {
+		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Column: user.FieldAddress,
 		})
 	}
 	if value, ok := uu.mutation.Phone(); ok {
@@ -726,7 +810,23 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if nodes := uu.mutation.RemovedPetsIDs(); len(nodes) > 0 {
+	if uu.mutation.PetsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.PetsTable,
+			Columns: []string{user.PetsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: pet.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uu.mutation.RemovedPetsIDs(); len(nodes) > 0 && !uu.mutation.PetsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -764,7 +864,23 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if nodes := uu.mutation.RemovedFilesIDs(); len(nodes) > 0 {
+	if uu.mutation.FilesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.FilesTable,
+			Columns: []string{user.FilesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: file.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uu.mutation.RemovedFilesIDs(); len(nodes) > 0 && !uu.mutation.FilesCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -802,7 +918,23 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if nodes := uu.mutation.RemovedGroupsIDs(); len(nodes) > 0 {
+	if uu.mutation.GroupsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   user.GroupsTable,
+			Columns: user.GroupsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: group.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uu.mutation.RemovedGroupsIDs(); len(nodes) > 0 && !uu.mutation.GroupsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: false,
@@ -840,7 +972,23 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if nodes := uu.mutation.RemovedFriendsIDs(); len(nodes) > 0 {
+	if uu.mutation.FriendsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   user.FriendsTable,
+			Columns: user.FriendsPrimaryKey,
+			Bidi:    true,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: user.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uu.mutation.RemovedFriendsIDs(); len(nodes) > 0 && !uu.mutation.FriendsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: false,
@@ -878,7 +1026,23 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if nodes := uu.mutation.RemovedFollowersIDs(); len(nodes) > 0 {
+	if uu.mutation.FollowersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   user.FollowersTable,
+			Columns: user.FollowersPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: user.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uu.mutation.RemovedFollowersIDs(); len(nodes) > 0 && !uu.mutation.FollowersCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: true,
@@ -916,7 +1080,23 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if nodes := uu.mutation.RemovedFollowingIDs(); len(nodes) > 0 {
+	if uu.mutation.FollowingCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   user.FollowingTable,
+			Columns: user.FollowingPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: user.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uu.mutation.RemovedFollowingIDs(); len(nodes) > 0 && !uu.mutation.FollowingCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: false,
@@ -1024,7 +1204,23 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if nodes := uu.mutation.RemovedChildrenIDs(); len(nodes) > 0 {
+	if uu.mutation.ChildrenCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   user.ChildrenTable,
+			Columns: []string{user.ChildrenColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: user.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uu.mutation.RemovedChildrenIDs(); len(nodes) > 0 && !uu.mutation.ChildrenCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
@@ -1111,18 +1307,19 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 // UserUpdateOne is the builder for updating a single User entity.
 type UserUpdateOne struct {
 	config
+	fields   []string
 	hooks    []Hook
 	mutation *UserMutation
 }
 
-// SetOptionalInt sets the optional_int field.
+// SetOptionalInt sets the "optional_int" field.
 func (uuo *UserUpdateOne) SetOptionalInt(i int) *UserUpdateOne {
 	uuo.mutation.ResetOptionalInt()
 	uuo.mutation.SetOptionalInt(i)
 	return uuo
 }
 
-// SetNillableOptionalInt sets the optional_int field if the given value is not nil.
+// SetNillableOptionalInt sets the "optional_int" field if the given value is not nil.
 func (uuo *UserUpdateOne) SetNillableOptionalInt(i *int) *UserUpdateOne {
 	if i != nil {
 		uuo.SetOptionalInt(*i)
@@ -1130,44 +1327,44 @@ func (uuo *UserUpdateOne) SetNillableOptionalInt(i *int) *UserUpdateOne {
 	return uuo
 }
 
-// AddOptionalInt adds i to optional_int.
+// AddOptionalInt adds i to the "optional_int" field.
 func (uuo *UserUpdateOne) AddOptionalInt(i int) *UserUpdateOne {
 	uuo.mutation.AddOptionalInt(i)
 	return uuo
 }
 
-// ClearOptionalInt clears the value of optional_int.
+// ClearOptionalInt clears the value of the "optional_int" field.
 func (uuo *UserUpdateOne) ClearOptionalInt() *UserUpdateOne {
 	uuo.mutation.ClearOptionalInt()
 	return uuo
 }
 
-// SetAge sets the age field.
+// SetAge sets the "age" field.
 func (uuo *UserUpdateOne) SetAge(i int) *UserUpdateOne {
 	uuo.mutation.ResetAge()
 	uuo.mutation.SetAge(i)
 	return uuo
 }
 
-// AddAge adds i to age.
+// AddAge adds i to the "age" field.
 func (uuo *UserUpdateOne) AddAge(i int) *UserUpdateOne {
 	uuo.mutation.AddAge(i)
 	return uuo
 }
 
-// SetName sets the name field.
+// SetName sets the "name" field.
 func (uuo *UserUpdateOne) SetName(s string) *UserUpdateOne {
 	uuo.mutation.SetName(s)
 	return uuo
 }
 
-// SetLast sets the last field.
+// SetLast sets the "last" field.
 func (uuo *UserUpdateOne) SetLast(s string) *UserUpdateOne {
 	uuo.mutation.SetLast(s)
 	return uuo
 }
 
-// SetNillableLast sets the last field if the given value is not nil.
+// SetNillableLast sets the "last" field if the given value is not nil.
 func (uuo *UserUpdateOne) SetNillableLast(s *string) *UserUpdateOne {
 	if s != nil {
 		uuo.SetLast(*s)
@@ -1175,13 +1372,13 @@ func (uuo *UserUpdateOne) SetNillableLast(s *string) *UserUpdateOne {
 	return uuo
 }
 
-// SetNickname sets the nickname field.
+// SetNickname sets the "nickname" field.
 func (uuo *UserUpdateOne) SetNickname(s string) *UserUpdateOne {
 	uuo.mutation.SetNickname(s)
 	return uuo
 }
 
-// SetNillableNickname sets the nickname field if the given value is not nil.
+// SetNillableNickname sets the "nickname" field if the given value is not nil.
 func (uuo *UserUpdateOne) SetNillableNickname(s *string) *UserUpdateOne {
 	if s != nil {
 		uuo.SetNickname(*s)
@@ -1189,19 +1386,39 @@ func (uuo *UserUpdateOne) SetNillableNickname(s *string) *UserUpdateOne {
 	return uuo
 }
 
-// ClearNickname clears the value of nickname.
+// ClearNickname clears the value of the "nickname" field.
 func (uuo *UserUpdateOne) ClearNickname() *UserUpdateOne {
 	uuo.mutation.ClearNickname()
 	return uuo
 }
 
-// SetPhone sets the phone field.
+// SetAddress sets the "address" field.
+func (uuo *UserUpdateOne) SetAddress(s string) *UserUpdateOne {
+	uuo.mutation.SetAddress(s)
+	return uuo
+}
+
+// SetNillableAddress sets the "address" field if the given value is not nil.
+func (uuo *UserUpdateOne) SetNillableAddress(s *string) *UserUpdateOne {
+	if s != nil {
+		uuo.SetAddress(*s)
+	}
+	return uuo
+}
+
+// ClearAddress clears the value of the "address" field.
+func (uuo *UserUpdateOne) ClearAddress() *UserUpdateOne {
+	uuo.mutation.ClearAddress()
+	return uuo
+}
+
+// SetPhone sets the "phone" field.
 func (uuo *UserUpdateOne) SetPhone(s string) *UserUpdateOne {
 	uuo.mutation.SetPhone(s)
 	return uuo
 }
 
-// SetNillablePhone sets the phone field if the given value is not nil.
+// SetNillablePhone sets the "phone" field if the given value is not nil.
 func (uuo *UserUpdateOne) SetNillablePhone(s *string) *UserUpdateOne {
 	if s != nil {
 		uuo.SetPhone(*s)
@@ -1209,19 +1426,19 @@ func (uuo *UserUpdateOne) SetNillablePhone(s *string) *UserUpdateOne {
 	return uuo
 }
 
-// ClearPhone clears the value of phone.
+// ClearPhone clears the value of the "phone" field.
 func (uuo *UserUpdateOne) ClearPhone() *UserUpdateOne {
 	uuo.mutation.ClearPhone()
 	return uuo
 }
 
-// SetPassword sets the password field.
+// SetPassword sets the "password" field.
 func (uuo *UserUpdateOne) SetPassword(s string) *UserUpdateOne {
 	uuo.mutation.SetPassword(s)
 	return uuo
 }
 
-// SetNillablePassword sets the password field if the given value is not nil.
+// SetNillablePassword sets the "password" field if the given value is not nil.
 func (uuo *UserUpdateOne) SetNillablePassword(s *string) *UserUpdateOne {
 	if s != nil {
 		uuo.SetPassword(*s)
@@ -1229,19 +1446,19 @@ func (uuo *UserUpdateOne) SetNillablePassword(s *string) *UserUpdateOne {
 	return uuo
 }
 
-// ClearPassword clears the value of password.
+// ClearPassword clears the value of the "password" field.
 func (uuo *UserUpdateOne) ClearPassword() *UserUpdateOne {
 	uuo.mutation.ClearPassword()
 	return uuo
 }
 
-// SetRole sets the role field.
+// SetRole sets the "role" field.
 func (uuo *UserUpdateOne) SetRole(u user.Role) *UserUpdateOne {
 	uuo.mutation.SetRole(u)
 	return uuo
 }
 
-// SetNillableRole sets the role field if the given value is not nil.
+// SetNillableRole sets the "role" field if the given value is not nil.
 func (uuo *UserUpdateOne) SetNillableRole(u *user.Role) *UserUpdateOne {
 	if u != nil {
 		uuo.SetRole(*u)
@@ -1249,13 +1466,13 @@ func (uuo *UserUpdateOne) SetNillableRole(u *user.Role) *UserUpdateOne {
 	return uuo
 }
 
-// SetSSOCert sets the SSOCert field.
+// SetSSOCert sets the "SSOCert" field.
 func (uuo *UserUpdateOne) SetSSOCert(s string) *UserUpdateOne {
 	uuo.mutation.SetSSOCert(s)
 	return uuo
 }
 
-// SetNillableSSOCert sets the SSOCert field if the given value is not nil.
+// SetNillableSSOCert sets the "SSOCert" field if the given value is not nil.
 func (uuo *UserUpdateOne) SetNillableSSOCert(s *string) *UserUpdateOne {
 	if s != nil {
 		uuo.SetSSOCert(*s)
@@ -1263,19 +1480,19 @@ func (uuo *UserUpdateOne) SetNillableSSOCert(s *string) *UserUpdateOne {
 	return uuo
 }
 
-// ClearSSOCert clears the value of SSOCert.
+// ClearSSOCert clears the value of the "SSOCert" field.
 func (uuo *UserUpdateOne) ClearSSOCert() *UserUpdateOne {
 	uuo.mutation.ClearSSOCert()
 	return uuo
 }
 
-// SetCardID sets the card edge to Card by id.
+// SetCardID sets the "card" edge to the Card entity by ID.
 func (uuo *UserUpdateOne) SetCardID(id int) *UserUpdateOne {
 	uuo.mutation.SetCardID(id)
 	return uuo
 }
 
-// SetNillableCardID sets the card edge to Card by id if the given value is not nil.
+// SetNillableCardID sets the "card" edge to the Card entity by ID if the given value is not nil.
 func (uuo *UserUpdateOne) SetNillableCardID(id *int) *UserUpdateOne {
 	if id != nil {
 		uuo = uuo.SetCardID(*id)
@@ -1283,18 +1500,18 @@ func (uuo *UserUpdateOne) SetNillableCardID(id *int) *UserUpdateOne {
 	return uuo
 }
 
-// SetCard sets the card edge to Card.
+// SetCard sets the "card" edge to the Card entity.
 func (uuo *UserUpdateOne) SetCard(c *Card) *UserUpdateOne {
 	return uuo.SetCardID(c.ID)
 }
 
-// AddPetIDs adds the pets edge to Pet by ids.
+// AddPetIDs adds the "pets" edge to the Pet entity by IDs.
 func (uuo *UserUpdateOne) AddPetIDs(ids ...int) *UserUpdateOne {
 	uuo.mutation.AddPetIDs(ids...)
 	return uuo
 }
 
-// AddPets adds the pets edges to Pet.
+// AddPets adds the "pets" edges to the Pet entity.
 func (uuo *UserUpdateOne) AddPets(p ...*Pet) *UserUpdateOne {
 	ids := make([]int, len(p))
 	for i := range p {
@@ -1303,13 +1520,13 @@ func (uuo *UserUpdateOne) AddPets(p ...*Pet) *UserUpdateOne {
 	return uuo.AddPetIDs(ids...)
 }
 
-// AddFileIDs adds the files edge to File by ids.
+// AddFileIDs adds the "files" edge to the File entity by IDs.
 func (uuo *UserUpdateOne) AddFileIDs(ids ...int) *UserUpdateOne {
 	uuo.mutation.AddFileIDs(ids...)
 	return uuo
 }
 
-// AddFiles adds the files edges to File.
+// AddFiles adds the "files" edges to the File entity.
 func (uuo *UserUpdateOne) AddFiles(f ...*File) *UserUpdateOne {
 	ids := make([]int, len(f))
 	for i := range f {
@@ -1318,13 +1535,13 @@ func (uuo *UserUpdateOne) AddFiles(f ...*File) *UserUpdateOne {
 	return uuo.AddFileIDs(ids...)
 }
 
-// AddGroupIDs adds the groups edge to Group by ids.
+// AddGroupIDs adds the "groups" edge to the Group entity by IDs.
 func (uuo *UserUpdateOne) AddGroupIDs(ids ...int) *UserUpdateOne {
 	uuo.mutation.AddGroupIDs(ids...)
 	return uuo
 }
 
-// AddGroups adds the groups edges to Group.
+// AddGroups adds the "groups" edges to the Group entity.
 func (uuo *UserUpdateOne) AddGroups(g ...*Group) *UserUpdateOne {
 	ids := make([]int, len(g))
 	for i := range g {
@@ -1333,13 +1550,13 @@ func (uuo *UserUpdateOne) AddGroups(g ...*Group) *UserUpdateOne {
 	return uuo.AddGroupIDs(ids...)
 }
 
-// AddFriendIDs adds the friends edge to User by ids.
+// AddFriendIDs adds the "friends" edge to the User entity by IDs.
 func (uuo *UserUpdateOne) AddFriendIDs(ids ...int) *UserUpdateOne {
 	uuo.mutation.AddFriendIDs(ids...)
 	return uuo
 }
 
-// AddFriends adds the friends edges to User.
+// AddFriends adds the "friends" edges to the User entity.
 func (uuo *UserUpdateOne) AddFriends(u ...*User) *UserUpdateOne {
 	ids := make([]int, len(u))
 	for i := range u {
@@ -1348,13 +1565,13 @@ func (uuo *UserUpdateOne) AddFriends(u ...*User) *UserUpdateOne {
 	return uuo.AddFriendIDs(ids...)
 }
 
-// AddFollowerIDs adds the followers edge to User by ids.
+// AddFollowerIDs adds the "followers" edge to the User entity by IDs.
 func (uuo *UserUpdateOne) AddFollowerIDs(ids ...int) *UserUpdateOne {
 	uuo.mutation.AddFollowerIDs(ids...)
 	return uuo
 }
 
-// AddFollowers adds the followers edges to User.
+// AddFollowers adds the "followers" edges to the User entity.
 func (uuo *UserUpdateOne) AddFollowers(u ...*User) *UserUpdateOne {
 	ids := make([]int, len(u))
 	for i := range u {
@@ -1363,13 +1580,13 @@ func (uuo *UserUpdateOne) AddFollowers(u ...*User) *UserUpdateOne {
 	return uuo.AddFollowerIDs(ids...)
 }
 
-// AddFollowingIDs adds the following edge to User by ids.
+// AddFollowingIDs adds the "following" edge to the User entity by IDs.
 func (uuo *UserUpdateOne) AddFollowingIDs(ids ...int) *UserUpdateOne {
 	uuo.mutation.AddFollowingIDs(ids...)
 	return uuo
 }
 
-// AddFollowing adds the following edges to User.
+// AddFollowing adds the "following" edges to the User entity.
 func (uuo *UserUpdateOne) AddFollowing(u ...*User) *UserUpdateOne {
 	ids := make([]int, len(u))
 	for i := range u {
@@ -1378,13 +1595,13 @@ func (uuo *UserUpdateOne) AddFollowing(u ...*User) *UserUpdateOne {
 	return uuo.AddFollowingIDs(ids...)
 }
 
-// SetTeamID sets the team edge to Pet by id.
+// SetTeamID sets the "team" edge to the Pet entity by ID.
 func (uuo *UserUpdateOne) SetTeamID(id int) *UserUpdateOne {
 	uuo.mutation.SetTeamID(id)
 	return uuo
 }
 
-// SetNillableTeamID sets the team edge to Pet by id if the given value is not nil.
+// SetNillableTeamID sets the "team" edge to the Pet entity by ID if the given value is not nil.
 func (uuo *UserUpdateOne) SetNillableTeamID(id *int) *UserUpdateOne {
 	if id != nil {
 		uuo = uuo.SetTeamID(*id)
@@ -1392,18 +1609,18 @@ func (uuo *UserUpdateOne) SetNillableTeamID(id *int) *UserUpdateOne {
 	return uuo
 }
 
-// SetTeam sets the team edge to Pet.
+// SetTeam sets the "team" edge to the Pet entity.
 func (uuo *UserUpdateOne) SetTeam(p *Pet) *UserUpdateOne {
 	return uuo.SetTeamID(p.ID)
 }
 
-// SetSpouseID sets the spouse edge to User by id.
+// SetSpouseID sets the "spouse" edge to the User entity by ID.
 func (uuo *UserUpdateOne) SetSpouseID(id int) *UserUpdateOne {
 	uuo.mutation.SetSpouseID(id)
 	return uuo
 }
 
-// SetNillableSpouseID sets the spouse edge to User by id if the given value is not nil.
+// SetNillableSpouseID sets the "spouse" edge to the User entity by ID if the given value is not nil.
 func (uuo *UserUpdateOne) SetNillableSpouseID(id *int) *UserUpdateOne {
 	if id != nil {
 		uuo = uuo.SetSpouseID(*id)
@@ -1411,18 +1628,18 @@ func (uuo *UserUpdateOne) SetNillableSpouseID(id *int) *UserUpdateOne {
 	return uuo
 }
 
-// SetSpouse sets the spouse edge to User.
+// SetSpouse sets the "spouse" edge to the User entity.
 func (uuo *UserUpdateOne) SetSpouse(u *User) *UserUpdateOne {
 	return uuo.SetSpouseID(u.ID)
 }
 
-// AddChildIDs adds the children edge to User by ids.
+// AddChildIDs adds the "children" edge to the User entity by IDs.
 func (uuo *UserUpdateOne) AddChildIDs(ids ...int) *UserUpdateOne {
 	uuo.mutation.AddChildIDs(ids...)
 	return uuo
 }
 
-// AddChildren adds the children edges to User.
+// AddChildren adds the "children" edges to the User entity.
 func (uuo *UserUpdateOne) AddChildren(u ...*User) *UserUpdateOne {
 	ids := make([]int, len(u))
 	for i := range u {
@@ -1431,13 +1648,13 @@ func (uuo *UserUpdateOne) AddChildren(u ...*User) *UserUpdateOne {
 	return uuo.AddChildIDs(ids...)
 }
 
-// SetParentID sets the parent edge to User by id.
+// SetParentID sets the "parent" edge to the User entity by ID.
 func (uuo *UserUpdateOne) SetParentID(id int) *UserUpdateOne {
 	uuo.mutation.SetParentID(id)
 	return uuo
 }
 
-// SetNillableParentID sets the parent edge to User by id if the given value is not nil.
+// SetNillableParentID sets the "parent" edge to the User entity by ID if the given value is not nil.
 func (uuo *UserUpdateOne) SetNillableParentID(id *int) *UserUpdateOne {
 	if id != nil {
 		uuo = uuo.SetParentID(*id)
@@ -1445,7 +1662,7 @@ func (uuo *UserUpdateOne) SetNillableParentID(id *int) *UserUpdateOne {
 	return uuo
 }
 
-// SetParent sets the parent edge to User.
+// SetParent sets the "parent" edge to the User entity.
 func (uuo *UserUpdateOne) SetParent(u *User) *UserUpdateOne {
 	return uuo.SetParentID(u.ID)
 }
@@ -1455,19 +1672,25 @@ func (uuo *UserUpdateOne) Mutation() *UserMutation {
 	return uuo.mutation
 }
 
-// ClearCard clears the card edge to Card.
+// ClearCard clears the "card" edge to the Card entity.
 func (uuo *UserUpdateOne) ClearCard() *UserUpdateOne {
 	uuo.mutation.ClearCard()
 	return uuo
 }
 
-// RemovePetIDs removes the pets edge to Pet by ids.
+// ClearPets clears all "pets" edges to the Pet entity.
+func (uuo *UserUpdateOne) ClearPets() *UserUpdateOne {
+	uuo.mutation.ClearPets()
+	return uuo
+}
+
+// RemovePetIDs removes the "pets" edge to Pet entities by IDs.
 func (uuo *UserUpdateOne) RemovePetIDs(ids ...int) *UserUpdateOne {
 	uuo.mutation.RemovePetIDs(ids...)
 	return uuo
 }
 
-// RemovePets removes pets edges to Pet.
+// RemovePets removes "pets" edges to Pet entities.
 func (uuo *UserUpdateOne) RemovePets(p ...*Pet) *UserUpdateOne {
 	ids := make([]int, len(p))
 	for i := range p {
@@ -1476,13 +1699,19 @@ func (uuo *UserUpdateOne) RemovePets(p ...*Pet) *UserUpdateOne {
 	return uuo.RemovePetIDs(ids...)
 }
 
-// RemoveFileIDs removes the files edge to File by ids.
+// ClearFiles clears all "files" edges to the File entity.
+func (uuo *UserUpdateOne) ClearFiles() *UserUpdateOne {
+	uuo.mutation.ClearFiles()
+	return uuo
+}
+
+// RemoveFileIDs removes the "files" edge to File entities by IDs.
 func (uuo *UserUpdateOne) RemoveFileIDs(ids ...int) *UserUpdateOne {
 	uuo.mutation.RemoveFileIDs(ids...)
 	return uuo
 }
 
-// RemoveFiles removes files edges to File.
+// RemoveFiles removes "files" edges to File entities.
 func (uuo *UserUpdateOne) RemoveFiles(f ...*File) *UserUpdateOne {
 	ids := make([]int, len(f))
 	for i := range f {
@@ -1491,13 +1720,19 @@ func (uuo *UserUpdateOne) RemoveFiles(f ...*File) *UserUpdateOne {
 	return uuo.RemoveFileIDs(ids...)
 }
 
-// RemoveGroupIDs removes the groups edge to Group by ids.
+// ClearGroups clears all "groups" edges to the Group entity.
+func (uuo *UserUpdateOne) ClearGroups() *UserUpdateOne {
+	uuo.mutation.ClearGroups()
+	return uuo
+}
+
+// RemoveGroupIDs removes the "groups" edge to Group entities by IDs.
 func (uuo *UserUpdateOne) RemoveGroupIDs(ids ...int) *UserUpdateOne {
 	uuo.mutation.RemoveGroupIDs(ids...)
 	return uuo
 }
 
-// RemoveGroups removes groups edges to Group.
+// RemoveGroups removes "groups" edges to Group entities.
 func (uuo *UserUpdateOne) RemoveGroups(g ...*Group) *UserUpdateOne {
 	ids := make([]int, len(g))
 	for i := range g {
@@ -1506,13 +1741,19 @@ func (uuo *UserUpdateOne) RemoveGroups(g ...*Group) *UserUpdateOne {
 	return uuo.RemoveGroupIDs(ids...)
 }
 
-// RemoveFriendIDs removes the friends edge to User by ids.
+// ClearFriends clears all "friends" edges to the User entity.
+func (uuo *UserUpdateOne) ClearFriends() *UserUpdateOne {
+	uuo.mutation.ClearFriends()
+	return uuo
+}
+
+// RemoveFriendIDs removes the "friends" edge to User entities by IDs.
 func (uuo *UserUpdateOne) RemoveFriendIDs(ids ...int) *UserUpdateOne {
 	uuo.mutation.RemoveFriendIDs(ids...)
 	return uuo
 }
 
-// RemoveFriends removes friends edges to User.
+// RemoveFriends removes "friends" edges to User entities.
 func (uuo *UserUpdateOne) RemoveFriends(u ...*User) *UserUpdateOne {
 	ids := make([]int, len(u))
 	for i := range u {
@@ -1521,13 +1762,19 @@ func (uuo *UserUpdateOne) RemoveFriends(u ...*User) *UserUpdateOne {
 	return uuo.RemoveFriendIDs(ids...)
 }
 
-// RemoveFollowerIDs removes the followers edge to User by ids.
+// ClearFollowers clears all "followers" edges to the User entity.
+func (uuo *UserUpdateOne) ClearFollowers() *UserUpdateOne {
+	uuo.mutation.ClearFollowers()
+	return uuo
+}
+
+// RemoveFollowerIDs removes the "followers" edge to User entities by IDs.
 func (uuo *UserUpdateOne) RemoveFollowerIDs(ids ...int) *UserUpdateOne {
 	uuo.mutation.RemoveFollowerIDs(ids...)
 	return uuo
 }
 
-// RemoveFollowers removes followers edges to User.
+// RemoveFollowers removes "followers" edges to User entities.
 func (uuo *UserUpdateOne) RemoveFollowers(u ...*User) *UserUpdateOne {
 	ids := make([]int, len(u))
 	for i := range u {
@@ -1536,13 +1783,19 @@ func (uuo *UserUpdateOne) RemoveFollowers(u ...*User) *UserUpdateOne {
 	return uuo.RemoveFollowerIDs(ids...)
 }
 
-// RemoveFollowingIDs removes the following edge to User by ids.
+// ClearFollowing clears all "following" edges to the User entity.
+func (uuo *UserUpdateOne) ClearFollowing() *UserUpdateOne {
+	uuo.mutation.ClearFollowing()
+	return uuo
+}
+
+// RemoveFollowingIDs removes the "following" edge to User entities by IDs.
 func (uuo *UserUpdateOne) RemoveFollowingIDs(ids ...int) *UserUpdateOne {
 	uuo.mutation.RemoveFollowingIDs(ids...)
 	return uuo
 }
 
-// RemoveFollowing removes following edges to User.
+// RemoveFollowing removes "following" edges to User entities.
 func (uuo *UserUpdateOne) RemoveFollowing(u ...*User) *UserUpdateOne {
 	ids := make([]int, len(u))
 	for i := range u {
@@ -1551,25 +1804,31 @@ func (uuo *UserUpdateOne) RemoveFollowing(u ...*User) *UserUpdateOne {
 	return uuo.RemoveFollowingIDs(ids...)
 }
 
-// ClearTeam clears the team edge to Pet.
+// ClearTeam clears the "team" edge to the Pet entity.
 func (uuo *UserUpdateOne) ClearTeam() *UserUpdateOne {
 	uuo.mutation.ClearTeam()
 	return uuo
 }
 
-// ClearSpouse clears the spouse edge to User.
+// ClearSpouse clears the "spouse" edge to the User entity.
 func (uuo *UserUpdateOne) ClearSpouse() *UserUpdateOne {
 	uuo.mutation.ClearSpouse()
 	return uuo
 }
 
-// RemoveChildIDs removes the children edge to User by ids.
+// ClearChildren clears all "children" edges to the User entity.
+func (uuo *UserUpdateOne) ClearChildren() *UserUpdateOne {
+	uuo.mutation.ClearChildren()
+	return uuo
+}
+
+// RemoveChildIDs removes the "children" edge to User entities by IDs.
 func (uuo *UserUpdateOne) RemoveChildIDs(ids ...int) *UserUpdateOne {
 	uuo.mutation.RemoveChildIDs(ids...)
 	return uuo
 }
 
-// RemoveChildren removes children edges to User.
+// RemoveChildren removes "children" edges to User entities.
 func (uuo *UserUpdateOne) RemoveChildren(u ...*User) *UserUpdateOne {
 	ids := make([]int, len(u))
 	for i := range u {
@@ -1578,36 +1837,38 @@ func (uuo *UserUpdateOne) RemoveChildren(u ...*User) *UserUpdateOne {
 	return uuo.RemoveChildIDs(ids...)
 }
 
-// ClearParent clears the parent edge to User.
+// ClearParent clears the "parent" edge to the User entity.
 func (uuo *UserUpdateOne) ClearParent() *UserUpdateOne {
 	uuo.mutation.ClearParent()
 	return uuo
 }
 
-// Save executes the query and returns the updated entity.
-func (uuo *UserUpdateOne) Save(ctx context.Context) (*User, error) {
-	if v, ok := uuo.mutation.OptionalInt(); ok {
-		if err := user.OptionalIntValidator(v); err != nil {
-			return nil, &ValidationError{Name: "optional_int", err: fmt.Errorf("ent: validator failed for field \"optional_int\": %w", err)}
-		}
-	}
-	if v, ok := uuo.mutation.Role(); ok {
-		if err := user.RoleValidator(v); err != nil {
-			return nil, &ValidationError{Name: "role", err: fmt.Errorf("ent: validator failed for field \"role\": %w", err)}
-		}
-	}
+// Select allows selecting one or more fields (columns) of the returned entity.
+// The default is selecting all fields defined in the entity schema.
+func (uuo *UserUpdateOne) Select(field string, fields ...string) *UserUpdateOne {
+	uuo.fields = append([]string{field}, fields...)
+	return uuo
+}
 
+// Save executes the query and returns the updated User entity.
+func (uuo *UserUpdateOne) Save(ctx context.Context) (*User, error) {
 	var (
 		err  error
 		node *User
 	)
 	if len(uuo.hooks) == 0 {
+		if err = uuo.check(); err != nil {
+			return nil, err
+		}
 		node, err = uuo.sqlSave(ctx)
 	} else {
 		var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 			mutation, ok := m.(*UserMutation)
 			if !ok {
 				return nil, fmt.Errorf("unexpected mutation type %T", m)
+			}
+			if err = uuo.check(); err != nil {
+				return nil, err
 			}
 			uuo.mutation = mutation
 			node, err = uuo.sqlSave(ctx)
@@ -1626,11 +1887,11 @@ func (uuo *UserUpdateOne) Save(ctx context.Context) (*User, error) {
 
 // SaveX is like Save, but panics if an error occurs.
 func (uuo *UserUpdateOne) SaveX(ctx context.Context) *User {
-	u, err := uuo.Save(ctx)
+	node, err := uuo.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
-	return u
+	return node
 }
 
 // Exec executes the query on the entity.
@@ -1646,7 +1907,22 @@ func (uuo *UserUpdateOne) ExecX(ctx context.Context) {
 	}
 }
 
-func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (u *User, err error) {
+// check runs all checks and user-defined validators on the builder.
+func (uuo *UserUpdateOne) check() error {
+	if v, ok := uuo.mutation.OptionalInt(); ok {
+		if err := user.OptionalIntValidator(v); err != nil {
+			return &ValidationError{Name: "optional_int", err: fmt.Errorf("ent: validator failed for field \"optional_int\": %w", err)}
+		}
+	}
+	if v, ok := uuo.mutation.Role(); ok {
+		if err := user.RoleValidator(v); err != nil {
+			return &ValidationError{Name: "role", err: fmt.Errorf("ent: validator failed for field \"role\": %w", err)}
+		}
+	}
+	return nil
+}
+
+func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) {
 	_spec := &sqlgraph.UpdateSpec{
 		Node: &sqlgraph.NodeSpec{
 			Table:   user.Table,
@@ -1662,6 +1938,25 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (u *User, err error) {
 		return nil, &ValidationError{Name: "ID", err: fmt.Errorf("missing User.ID for update")}
 	}
 	_spec.Node.ID.Value = id
+	if fields := uuo.fields; len(fields) > 0 {
+		_spec.Node.Columns = make([]string, 0, len(fields))
+		_spec.Node.Columns = append(_spec.Node.Columns, user.FieldID)
+		for _, f := range fields {
+			if !user.ValidColumn(f) {
+				return nil, &ValidationError{Name: f, err: fmt.Errorf("ent: invalid field %q for query", f)}
+			}
+			if f != user.FieldID {
+				_spec.Node.Columns = append(_spec.Node.Columns, f)
+			}
+		}
+	}
+	if ps := uuo.mutation.predicates; len(ps) > 0 {
+		_spec.Predicate = func(selector *sql.Selector) {
+			for i := range ps {
+				ps[i](selector)
+			}
+		}
+	}
 	if value, ok := uuo.mutation.OptionalInt(); ok {
 		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
 			Type:   field.TypeInt,
@@ -1721,6 +2016,19 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (u *User, err error) {
 		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
 			Type:   field.TypeString,
 			Column: user.FieldNickname,
+		})
+	}
+	if value, ok := uuo.mutation.Address(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: user.FieldAddress,
+		})
+	}
+	if uuo.mutation.AddressCleared() {
+		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Column: user.FieldAddress,
 		})
 	}
 	if value, ok := uuo.mutation.Phone(); ok {
@@ -1804,7 +2112,23 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (u *User, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if nodes := uuo.mutation.RemovedPetsIDs(); len(nodes) > 0 {
+	if uuo.mutation.PetsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.PetsTable,
+			Columns: []string{user.PetsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: pet.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uuo.mutation.RemovedPetsIDs(); len(nodes) > 0 && !uuo.mutation.PetsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -1842,7 +2166,23 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (u *User, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if nodes := uuo.mutation.RemovedFilesIDs(); len(nodes) > 0 {
+	if uuo.mutation.FilesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.FilesTable,
+			Columns: []string{user.FilesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: file.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uuo.mutation.RemovedFilesIDs(); len(nodes) > 0 && !uuo.mutation.FilesCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -1880,7 +2220,23 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (u *User, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if nodes := uuo.mutation.RemovedGroupsIDs(); len(nodes) > 0 {
+	if uuo.mutation.GroupsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   user.GroupsTable,
+			Columns: user.GroupsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: group.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uuo.mutation.RemovedGroupsIDs(); len(nodes) > 0 && !uuo.mutation.GroupsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: false,
@@ -1918,7 +2274,23 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (u *User, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if nodes := uuo.mutation.RemovedFriendsIDs(); len(nodes) > 0 {
+	if uuo.mutation.FriendsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   user.FriendsTable,
+			Columns: user.FriendsPrimaryKey,
+			Bidi:    true,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: user.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uuo.mutation.RemovedFriendsIDs(); len(nodes) > 0 && !uuo.mutation.FriendsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: false,
@@ -1956,7 +2328,23 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (u *User, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if nodes := uuo.mutation.RemovedFollowersIDs(); len(nodes) > 0 {
+	if uuo.mutation.FollowersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   user.FollowersTable,
+			Columns: user.FollowersPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: user.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uuo.mutation.RemovedFollowersIDs(); len(nodes) > 0 && !uuo.mutation.FollowersCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: true,
@@ -1994,7 +2382,23 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (u *User, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if nodes := uuo.mutation.RemovedFollowingIDs(); len(nodes) > 0 {
+	if uuo.mutation.FollowingCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   user.FollowingTable,
+			Columns: user.FollowingPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: user.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uuo.mutation.RemovedFollowingIDs(); len(nodes) > 0 && !uuo.mutation.FollowingCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: false,
@@ -2102,7 +2506,23 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (u *User, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if nodes := uuo.mutation.RemovedChildrenIDs(); len(nodes) > 0 {
+	if uuo.mutation.ChildrenCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   user.ChildrenTable,
+			Columns: []string{user.ChildrenColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: user.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uuo.mutation.RemovedChildrenIDs(); len(nodes) > 0 && !uuo.mutation.ChildrenCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
@@ -2175,9 +2595,9 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (u *User, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	u = &User{config: uuo.config}
-	_spec.Assign = u.assignValues
-	_spec.ScanValues = u.scanValues()
+	_node = &User{config: uuo.config}
+	_spec.Assign = _node.assignValues
+	_spec.ScanValues = _node.scanValues
 	if err = sqlgraph.UpdateNode(ctx, uuo.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{user.Label}
@@ -2186,5 +2606,5 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (u *User, err error) {
 		}
 		return nil, err
 	}
-	return u, nil
+	return _node, nil
 }

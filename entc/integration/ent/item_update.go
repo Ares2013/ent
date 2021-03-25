@@ -10,24 +10,23 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/facebook/ent/dialect/sql"
-	"github.com/facebook/ent/dialect/sql/sqlgraph"
-	"github.com/facebook/ent/entc/integration/ent/item"
-	"github.com/facebook/ent/entc/integration/ent/predicate"
-	"github.com/facebook/ent/schema/field"
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/entc/integration/ent/item"
+	"entgo.io/ent/entc/integration/ent/predicate"
+	"entgo.io/ent/schema/field"
 )
 
 // ItemUpdate is the builder for updating Item entities.
 type ItemUpdate struct {
 	config
-	hooks      []Hook
-	mutation   *ItemMutation
-	predicates []predicate.Item
+	hooks    []Hook
+	mutation *ItemMutation
 }
 
-// Where adds a new predicate for the builder.
+// Where adds a new predicate for the ItemUpdate builder.
 func (iu *ItemUpdate) Where(ps ...predicate.Item) *ItemUpdate {
-	iu.predicates = append(iu.predicates, ps...)
+	iu.mutation.predicates = append(iu.mutation.predicates, ps...)
 	return iu
 }
 
@@ -36,7 +35,7 @@ func (iu *ItemUpdate) Mutation() *ItemMutation {
 	return iu.mutation
 }
 
-// Save executes the query and returns the number of rows/vertices matched by this operation.
+// Save executes the query and returns the number of nodes affected by the update operation.
 func (iu *ItemUpdate) Save(ctx context.Context) (int, error) {
 	var (
 		err      error
@@ -98,7 +97,7 @@ func (iu *ItemUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			},
 		},
 	}
-	if ps := iu.predicates; len(ps) > 0 {
+	if ps := iu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
@@ -119,6 +118,7 @@ func (iu *ItemUpdate) sqlSave(ctx context.Context) (n int, err error) {
 // ItemUpdateOne is the builder for updating a single Item entity.
 type ItemUpdateOne struct {
 	config
+	fields   []string
 	hooks    []Hook
 	mutation *ItemMutation
 }
@@ -128,7 +128,14 @@ func (iuo *ItemUpdateOne) Mutation() *ItemMutation {
 	return iuo.mutation
 }
 
-// Save executes the query and returns the updated entity.
+// Select allows selecting one or more fields (columns) of the returned entity.
+// The default is selecting all fields defined in the entity schema.
+func (iuo *ItemUpdateOne) Select(field string, fields ...string) *ItemUpdateOne {
+	iuo.fields = append([]string{field}, fields...)
+	return iuo
+}
+
+// Save executes the query and returns the updated Item entity.
 func (iuo *ItemUpdateOne) Save(ctx context.Context) (*Item, error) {
 	var (
 		err  error
@@ -159,11 +166,11 @@ func (iuo *ItemUpdateOne) Save(ctx context.Context) (*Item, error) {
 
 // SaveX is like Save, but panics if an error occurs.
 func (iuo *ItemUpdateOne) SaveX(ctx context.Context) *Item {
-	i, err := iuo.Save(ctx)
+	node, err := iuo.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
-	return i
+	return node
 }
 
 // Exec executes the query on the entity.
@@ -179,7 +186,7 @@ func (iuo *ItemUpdateOne) ExecX(ctx context.Context) {
 	}
 }
 
-func (iuo *ItemUpdateOne) sqlSave(ctx context.Context) (i *Item, err error) {
+func (iuo *ItemUpdateOne) sqlSave(ctx context.Context) (_node *Item, err error) {
 	_spec := &sqlgraph.UpdateSpec{
 		Node: &sqlgraph.NodeSpec{
 			Table:   item.Table,
@@ -195,9 +202,28 @@ func (iuo *ItemUpdateOne) sqlSave(ctx context.Context) (i *Item, err error) {
 		return nil, &ValidationError{Name: "ID", err: fmt.Errorf("missing Item.ID for update")}
 	}
 	_spec.Node.ID.Value = id
-	i = &Item{config: iuo.config}
-	_spec.Assign = i.assignValues
-	_spec.ScanValues = i.scanValues()
+	if fields := iuo.fields; len(fields) > 0 {
+		_spec.Node.Columns = make([]string, 0, len(fields))
+		_spec.Node.Columns = append(_spec.Node.Columns, item.FieldID)
+		for _, f := range fields {
+			if !item.ValidColumn(f) {
+				return nil, &ValidationError{Name: f, err: fmt.Errorf("ent: invalid field %q for query", f)}
+			}
+			if f != item.FieldID {
+				_spec.Node.Columns = append(_spec.Node.Columns, f)
+			}
+		}
+	}
+	if ps := iuo.mutation.predicates; len(ps) > 0 {
+		_spec.Predicate = func(selector *sql.Selector) {
+			for i := range ps {
+				ps[i](selector)
+			}
+		}
+	}
+	_node = &Item{config: iuo.config}
+	_spec.Assign = _node.assignValues
+	_spec.ScanValues = _node.scanValues
 	if err = sqlgraph.UpdateNode(ctx, iuo.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{item.Label}
@@ -206,5 +232,5 @@ func (iuo *ItemUpdateOne) sqlSave(ctx context.Context) (i *Item, err error) {
 		}
 		return nil, err
 	}
-	return i, nil
+	return _node, nil
 }

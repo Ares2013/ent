@@ -15,10 +15,8 @@ const (
 	FieldAge = "age"
 	// FieldName holds the string denoting the name field in the database.
 	FieldName = "name"
-
 	// EdgeGroups holds the string denoting the groups edge name in mutations.
 	EdgeGroups = "groups"
-
 	// Table holds the table name of the user in the database.
 	Table = "users"
 	// GroupsTable is the table the holds the groups relation/edge. The primary key declared below.
@@ -40,3 +38,13 @@ var (
 	// primary key for the groups relation (M2M).
 	GroupsPrimaryKey = []string{"group_id", "user_id"}
 )
+
+// ValidColumn reports if the column name is valid (part of the table columns).
+func ValidColumn(column string) bool {
+	for i := range Columns {
+		if column == Columns[i] {
+			return true
+		}
+	}
+	return false
+}

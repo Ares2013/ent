@@ -3,7 +3,7 @@ id: crud
 title: CRUD API
 ---
 
-As mentioned in the [introduction](code-gen.md) section, running `entc` on the schemas,
+As mentioned in the [introduction](code-gen.md) section, running `ent` on the schemas,
 will generate the following assets:
 
 - `Client` and `Tx` objects used for interacting with the graph.
@@ -220,6 +220,10 @@ users, err := a8m.
 	All(ctx)
 ```
 
+More advance traversals can be found in the [next section](traversals.md). 
+
+## Field Selection
+
 Get all pet names.
 
 ```go
@@ -229,7 +233,20 @@ names, err := client.Pet.
 	Strings(ctx)
 ```
 
-Get all pet names and ages.
+Select partial objects and partial associations.gs
+Get all pets and their owners, but select and fill only the `ID` and `Name` fields.
+
+```go
+pets, err := client.Pet.
+    Query().
+    Select(pet.FieldName).
+    WithOwner(func (q *ent.UserQuery) {
+        q.Select(user.FieldName)
+    }).
+    All(ctx)
+```
+
+Scan all pet names and ages to custom struct.
 
 ```go
 var v []struct {
@@ -245,7 +262,18 @@ if err != nil {
 }
 ```
 
-More advance traversals can be found in the [next section](traversals.md). 
+Update an entity and return a partial of it.
+
+```go
+pedro, err := client.Pet.
+	UpdateOneID(id).
+	SetAge(9).
+	SetName("pedro").
+	// Select allows selecting one or more fields (columns) of the returned entity.
+	// The default is selecting all fields defined in the entity schema.
+	Select(pet.FieldName).
+	Save(ctx)
+```
 
 ## Delete One 
 
@@ -270,9 +298,9 @@ err := client.User.
 Delete using predicates.
 
 ```go
-err := client.File.
+_, err := client.File.
 	Delete().
-	Where(file.UpdatedAtLT(date))
+	Where(file.UpdatedAtLT(date)).
 	Exec(ctx)
 ```
 
@@ -280,7 +308,7 @@ err := client.File.
 
 Each generated node type has its own type of mutation. For example, all [`User` builders](crud.md#create-an-entity), share
 the same generated `UserMutation` object.
-However, all builder types implement the generic <a target="_blank" href="https://pkg.go.dev/github.com/facebook/ent?tab=doc#Mutation">`ent.Mutation`<a> interface.
+However, all builder types implement the generic <a target="_blank" href="https://pkg.go.dev/entgo.io/ent?tab=doc#Mutation">`ent.Mutation`</a> interface.
 
 For example, in order to write a generic code that apply a set of methods on both `ent.UserCreate`
 and `ent.UserUpdate`, use the `UserMutation` object:

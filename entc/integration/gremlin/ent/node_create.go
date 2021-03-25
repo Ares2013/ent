@@ -10,12 +10,12 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/facebook/ent/dialect/gremlin"
-	"github.com/facebook/ent/dialect/gremlin/graph/dsl"
-	"github.com/facebook/ent/dialect/gremlin/graph/dsl/__"
-	"github.com/facebook/ent/dialect/gremlin/graph/dsl/g"
-	"github.com/facebook/ent/dialect/gremlin/graph/dsl/p"
-	"github.com/facebook/ent/entc/integration/gremlin/ent/node"
+	"entgo.io/ent/dialect/gremlin"
+	"entgo.io/ent/dialect/gremlin/graph/dsl"
+	"entgo.io/ent/dialect/gremlin/graph/dsl/__"
+	"entgo.io/ent/dialect/gremlin/graph/dsl/g"
+	"entgo.io/ent/dialect/gremlin/graph/dsl/p"
+	"entgo.io/ent/entc/integration/gremlin/ent/node"
 )
 
 // NodeCreate is the builder for creating a Node entity.
@@ -25,13 +25,13 @@ type NodeCreate struct {
 	hooks    []Hook
 }
 
-// SetValue sets the value field.
+// SetValue sets the "value" field.
 func (nc *NodeCreate) SetValue(i int) *NodeCreate {
 	nc.mutation.SetValue(i)
 	return nc
 }
 
-// SetNillableValue sets the value field if the given value is not nil.
+// SetNillableValue sets the "value" field if the given value is not nil.
 func (nc *NodeCreate) SetNillableValue(i *int) *NodeCreate {
 	if i != nil {
 		nc.SetValue(*i)
@@ -39,13 +39,13 @@ func (nc *NodeCreate) SetNillableValue(i *int) *NodeCreate {
 	return nc
 }
 
-// SetPrevID sets the prev edge to Node by id.
+// SetPrevID sets the "prev" edge to the Node entity by ID.
 func (nc *NodeCreate) SetPrevID(id string) *NodeCreate {
 	nc.mutation.SetPrevID(id)
 	return nc
 }
 
-// SetNillablePrevID sets the prev edge to Node by id if the given value is not nil.
+// SetNillablePrevID sets the "prev" edge to the Node entity by ID if the given value is not nil.
 func (nc *NodeCreate) SetNillablePrevID(id *string) *NodeCreate {
 	if id != nil {
 		nc = nc.SetPrevID(*id)
@@ -53,18 +53,18 @@ func (nc *NodeCreate) SetNillablePrevID(id *string) *NodeCreate {
 	return nc
 }
 
-// SetPrev sets the prev edge to Node.
+// SetPrev sets the "prev" edge to the Node entity.
 func (nc *NodeCreate) SetPrev(n *Node) *NodeCreate {
 	return nc.SetPrevID(n.ID)
 }
 
-// SetNextID sets the next edge to Node by id.
+// SetNextID sets the "next" edge to the Node entity by ID.
 func (nc *NodeCreate) SetNextID(id string) *NodeCreate {
 	nc.mutation.SetNextID(id)
 	return nc
 }
 
-// SetNillableNextID sets the next edge to Node by id if the given value is not nil.
+// SetNillableNextID sets the "next" edge to the Node entity by ID if the given value is not nil.
 func (nc *NodeCreate) SetNillableNextID(id *string) *NodeCreate {
 	if id != nil {
 		nc = nc.SetNextID(*id)
@@ -72,7 +72,7 @@ func (nc *NodeCreate) SetNillableNextID(id *string) *NodeCreate {
 	return nc
 }
 
-// SetNext sets the next edge to Node.
+// SetNext sets the "next" edge to the Node entity.
 func (nc *NodeCreate) SetNext(n *Node) *NodeCreate {
 	return nc.SetNextID(n.ID)
 }
@@ -84,20 +84,23 @@ func (nc *NodeCreate) Mutation() *NodeMutation {
 
 // Save creates the Node in the database.
 func (nc *NodeCreate) Save(ctx context.Context) (*Node, error) {
-	if err := nc.preSave(); err != nil {
-		return nil, err
-	}
 	var (
 		err  error
 		node *Node
 	)
 	if len(nc.hooks) == 0 {
+		if err = nc.check(); err != nil {
+			return nil, err
+		}
 		node, err = nc.gremlinSave(ctx)
 	} else {
 		var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 			mutation, ok := m.(*NodeMutation)
 			if !ok {
 				return nil, fmt.Errorf("unexpected mutation type %T", m)
+			}
+			if err = nc.check(); err != nil {
+				return nil, err
 			}
 			nc.mutation = mutation
 			node, err = nc.gremlinSave(ctx)
@@ -123,7 +126,8 @@ func (nc *NodeCreate) SaveX(ctx context.Context) *Node {
 	return v
 }
 
-func (nc *NodeCreate) preSave() error {
+// check runs all checks and user-defined validators on the builder.
+func (nc *NodeCreate) check() error {
 	return nil
 }
 
@@ -177,7 +181,7 @@ func (nc *NodeCreate) gremlin() *dsl.Traversal {
 	return tr
 }
 
-// NodeCreateBulk is the builder for creating a bulk of Node entities.
+// NodeCreateBulk is the builder for creating many Node entities in bulk.
 type NodeCreateBulk struct {
 	config
 	builders []*NodeCreate

@@ -12,14 +12,14 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/facebook/ent"
-	"github.com/facebook/ent/dialect/gremlin"
-	"github.com/facebook/ent/dialect/gremlin/encoding/graphson"
-	"github.com/facebook/ent/dialect/gremlin/graph/dsl"
-	"github.com/facebook/ent/dialect/gremlin/graph/dsl/__"
+	"entgo.io/ent"
+	"entgo.io/ent/dialect/gremlin"
+	"entgo.io/ent/dialect/gremlin/encoding/graphson"
+	"entgo.io/ent/dialect/gremlin/graph/dsl"
+	"entgo.io/ent/dialect/gremlin/graph/dsl/__"
 )
 
-// ent aliases to avoid import conflict in user's code.
+// ent aliases to avoid import conflicts in user's code.
 type (
 	Op         = ent.Op
 	Hook       = ent.Hook
@@ -31,7 +31,7 @@ type (
 	MutateFunc = ent.MutateFunc
 )
 
-// OrderFunc applies an ordering on either graph traversal or sql selector.
+// OrderFunc applies an ordering on the graph traversal.
 type OrderFunc func(*dsl.Traversal)
 
 // Asc applies the given fields in ASC order.
@@ -162,7 +162,7 @@ func (e *ValidationError) Error() string {
 
 // Unwrap implements the errors.Wrapper interface.
 func (e *ValidationError) Unwrap() error {
-	return errors.Unwrap(e.err)
+	return e.err
 }
 
 // IsValidationError returns a boolean indicating whether the error is a validaton error.
@@ -193,7 +193,7 @@ func IsNotFound(err error) bool {
 	return errors.As(err, &e)
 }
 
-// MaskNotFound masks nor found error.
+// MaskNotFound masks not found error.
 func MaskNotFound(err error) error {
 	if IsNotFound(err) {
 		return nil

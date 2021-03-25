@@ -31,7 +31,8 @@ const (
 	FieldState = "state"
 	// FieldStatus holds the string denoting the status field in the database.
 	FieldStatus = "status"
-
+	// FieldWorkplace holds the string denoting the workplace field in the database.
+	FieldWorkplace = "workplace"
 	// EdgeParent holds the string denoting the parent edge name in mutations.
 	EdgeParent = "parent"
 	// EdgeChildren holds the string denoting the children edge name in mutations.
@@ -40,8 +41,7 @@ const (
 	EdgeSpouse = "spouse"
 	// EdgeCar holds the string denoting the car edge name in mutations.
 	EdgeCar = "car"
-
-	// CarFieldID holds the string denoting the id field of the Car.
+	// CarFieldID holds the string denoting the ID field of the Car.
 	CarFieldID = "id"
 	// Table holds the table name of the user in the database.
 	Table = "users"
@@ -77,20 +77,39 @@ var Columns = []string{
 	FieldBlob,
 	FieldState,
 	FieldStatus,
+	FieldWorkplace,
 }
 
-// ForeignKeys holds the SQL foreign-keys that are owned by the User type.
+// ForeignKeys holds the SQL foreign-keys that are owned by the "users"
+// table and are not defined as standalone fields in the schema.
 var ForeignKeys = []string{
 	"user_children",
 	"user_spouse",
 }
 
+// ValidColumn reports if the column name is valid (part of the table columns).
+func ValidColumn(column string) bool {
+	for i := range Columns {
+		if column == Columns[i] {
+			return true
+		}
+	}
+	for i := range ForeignKeys {
+		if column == ForeignKeys[i] {
+			return true
+		}
+	}
+	return false
+}
+
 var (
 	// NameValidator is a validator for the "name" field. It is called by the builders before save.
 	NameValidator func(string) error
+	// WorkplaceValidator is a validator for the "workplace" field. It is called by the builders before save.
+	WorkplaceValidator func(string) error
 )
 
-// State defines the type for the state enum field.
+// State defines the type for the "state" enum field.
 type State string
 
 // State values.

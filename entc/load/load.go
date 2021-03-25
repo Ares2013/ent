@@ -23,8 +23,8 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/facebook/ent"
-	"github.com/facebook/ent/entc/load/internal"
+	"entgo.io/ent"
+	"entgo.io/ent/entc/load/internal"
 
 	"golang.org/x/tools/go/packages"
 )
@@ -42,7 +42,7 @@ type Config struct {
 	// Path is the path for the schema package.
 	Path string
 	// Names are the schema names to run the code generation on.
-	// Empty means all schemas in the directory.
+	// Empty means all schema in the directory.
 	Names []string
 }
 
@@ -50,7 +50,7 @@ type Config struct {
 func (c *Config) Load() (*SchemaSpec, error) {
 	pkgPath, err := c.load()
 	if err != nil {
-		return nil, fmt.Errorf("load schemas dir: %v", err)
+		return nil, fmt.Errorf("load schema dir: %w", err)
 	}
 	if len(c.Names) == 0 {
 		return nil, fmt.Errorf("no schema found in: %s", c.Path)
@@ -61,18 +61,18 @@ func (c *Config) Load() (*SchemaSpec, error) {
 		Package string
 	}{c, pkgPath})
 	if err != nil {
-		return nil, fmt.Errorf("execute template: %v", err)
+		return nil, fmt.Errorf("execute template: %w", err)
 	}
 	buf, err := format.Source(b.Bytes())
 	if err != nil {
-		return nil, fmt.Errorf("format template: %v", err)
+		return nil, fmt.Errorf("format template: %w", err)
 	}
 	if err := os.MkdirAll(".entc", os.ModePerm); err != nil {
 		return nil, err
 	}
 	target := fmt.Sprintf(".entc/%s.go", filename(pkgPath))
 	if err := ioutil.WriteFile(target, buf, 0644); err != nil {
-		return nil, fmt.Errorf("write file %s: %v", target, err)
+		return nil, fmt.Errorf("write file %s: %w", target, err)
 	}
 	defer os.RemoveAll(".entc")
 	out, err := run(target)
@@ -83,7 +83,7 @@ func (c *Config) Load() (*SchemaSpec, error) {
 	for _, line := range strings.Split(out, "\n") {
 		schema, err := UnmarshalSchema([]byte(line))
 		if err != nil {
-			return nil, fmt.Errorf("unmarshal schema %s: %v", line, err)
+			return nil, fmt.Errorf("unmarshal schema %s: %w", line, err)
 		}
 		spec.Schemas = append(spec.Schemas, schema)
 	}
@@ -95,9 +95,11 @@ var entInterface = reflect.TypeOf(struct{ ent.Interface }{}).Field(0).Type
 
 // load loads the schemas info.
 func (c *Config) load() (string, error) {
-	pkgs, err := packages.Load(&packages.Config{Mode: packages.LoadSyntax}, c.Path, entInterface.PkgPath())
+	pkgs, err := packages.Load(&packages.Config{
+		Mode: packages.NeedName | packages.NeedTypes | packages.NeedTypesInfo,
+	}, c.Path, entInterface.PkgPath())
 	if err != nil {
-		return "", fmt.Errorf("loading package: %v", err)
+		return "", fmt.Errorf("loading package: %w", err)
 	}
 	if len(pkgs) < 2 {
 		return "", fmt.Errorf("missing package information for: %s", c.Path)
@@ -132,7 +134,7 @@ func (c *Config) load() (string, error) {
 	return pkg.PkgPath, nil
 }
 
-//go:generate go run github.com/go-bindata/go-bindata/go-bindata -pkg=internal -o=internal/bindata.go -modtime=1 ./template/... schema.go
+//go:generate go run github.com/go-bindata/go-bindata/go-bindata -pkg=internal -o=internal/bindata.go -mode=420 -modtime=1 ./template/... schema.go
 
 var buildTmpl = templates()
 
@@ -160,7 +162,7 @@ func schemaTemplates() ([]string, error) {
 	)
 	f, err := parser.ParseFile(fset, name, string(internal.MustAsset(name)), parser.AllErrors)
 	if err != nil {
-		return nil, fmt.Errorf("parse file: %s: %v", name, err)
+		return nil, fmt.Errorf("parse file: %s: %w", name, err)
 	}
 	for _, decl := range f.Decls {
 		if decl, ok := decl.(*ast.GenDecl); ok && decl.Tok == token.IMPORT {
@@ -170,7 +172,7 @@ func schemaTemplates() ([]string, error) {
 			continue
 		}
 		if err := format.Node(&code, fset, decl); err != nil {
-			return nil, fmt.Errorf("format node: %v", err)
+			return nil, fmt.Errorf("format node: %w", err)
 		}
 		code.WriteByte('\n')
 	}
@@ -181,7 +183,7 @@ func schemaTemplates() ([]string, error) {
 }
 
 func filename(pkg string) string {
-	name := strings.Replace(pkg, "/", "_", -1)
+	name := strings.ReplaceAll(pkg, "/", "_")
 	return fmt.Sprintf("entc_%s_%d", name, time.Now().Unix())
 }
 

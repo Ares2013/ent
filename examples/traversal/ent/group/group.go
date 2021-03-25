@@ -13,12 +13,10 @@ const (
 	FieldID = "id"
 	// FieldName holds the string denoting the name field in the database.
 	FieldName = "name"
-
 	// EdgeUsers holds the string denoting the users edge name in mutations.
 	EdgeUsers = "users"
 	// EdgeAdmin holds the string denoting the admin edge name in mutations.
 	EdgeAdmin = "admin"
-
 	// Table holds the table name of the group in the database.
 	Table = "groups"
 	// UsersTable is the table the holds the users relation/edge. The primary key declared below.
@@ -41,7 +39,8 @@ var Columns = []string{
 	FieldName,
 }
 
-// ForeignKeys holds the SQL foreign-keys that are owned by the Group type.
+// ForeignKeys holds the SQL foreign-keys that are owned by the "groups"
+// table and are not defined as standalone fields in the schema.
 var ForeignKeys = []string{
 	"group_admin",
 }
@@ -51,3 +50,18 @@ var (
 	// primary key for the users relation (M2M).
 	UsersPrimaryKey = []string{"group_id", "user_id"}
 )
+
+// ValidColumn reports if the column name is valid (part of the table columns).
+func ValidColumn(column string) bool {
+	for i := range Columns {
+		if column == Columns[i] {
+			return true
+		}
+	}
+	for i := range ForeignKeys {
+		if column == ForeignKeys[i] {
+			return true
+		}
+	}
+	return false
+}

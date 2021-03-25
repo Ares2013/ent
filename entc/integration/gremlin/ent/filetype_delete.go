@@ -10,25 +10,24 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/facebook/ent/dialect/gremlin"
-	"github.com/facebook/ent/dialect/gremlin/graph/dsl"
-	"github.com/facebook/ent/dialect/gremlin/graph/dsl/__"
-	"github.com/facebook/ent/dialect/gremlin/graph/dsl/g"
-	"github.com/facebook/ent/entc/integration/gremlin/ent/filetype"
-	"github.com/facebook/ent/entc/integration/gremlin/ent/predicate"
+	"entgo.io/ent/dialect/gremlin"
+	"entgo.io/ent/dialect/gremlin/graph/dsl"
+	"entgo.io/ent/dialect/gremlin/graph/dsl/__"
+	"entgo.io/ent/dialect/gremlin/graph/dsl/g"
+	"entgo.io/ent/entc/integration/gremlin/ent/filetype"
+	"entgo.io/ent/entc/integration/gremlin/ent/predicate"
 )
 
 // FileTypeDelete is the builder for deleting a FileType entity.
 type FileTypeDelete struct {
 	config
-	hooks      []Hook
-	mutation   *FileTypeMutation
-	predicates []predicate.FileType
+	hooks    []Hook
+	mutation *FileTypeMutation
 }
 
-// Where adds a new predicate to the delete builder.
+// Where adds a new predicate to the FileTypeDelete builder.
 func (ftd *FileTypeDelete) Where(ps ...predicate.FileType) *FileTypeDelete {
-	ftd.predicates = append(ftd.predicates, ps...)
+	ftd.mutation.predicates = append(ftd.mutation.predicates, ps...)
 	return ftd
 }
 
@@ -81,7 +80,7 @@ func (ftd *FileTypeDelete) gremlinExec(ctx context.Context) (int, error) {
 
 func (ftd *FileTypeDelete) gremlin() *dsl.Traversal {
 	t := g.V().HasLabel(filetype.Label)
-	for _, p := range ftd.predicates {
+	for _, p := range ftd.mutation.predicates {
 		p(t)
 	}
 	return t.SideEffect(__.Drop()).Count()

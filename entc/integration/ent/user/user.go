@@ -25,6 +25,8 @@ const (
 	FieldLast = "last"
 	// FieldNickname holds the string denoting the nickname field in the database.
 	FieldNickname = "nickname"
+	// FieldAddress holds the string denoting the address field in the database.
+	FieldAddress = "address"
 	// FieldPhone holds the string denoting the phone field in the database.
 	FieldPhone = "phone"
 	// FieldPassword holds the string denoting the password field in the database.
@@ -33,7 +35,6 @@ const (
 	FieldRole = "role"
 	// FieldSSOCert holds the string denoting the ssocert field in the database.
 	FieldSSOCert = "sso_cert"
-
 	// EdgeCard holds the string denoting the card edge name in mutations.
 	EdgeCard = "card"
 	// EdgePets holds the string denoting the pets edge name in mutations.
@@ -56,7 +57,6 @@ const (
 	EdgeChildren = "children"
 	// EdgeParent holds the string denoting the parent edge name in mutations.
 	EdgeParent = "parent"
-
 	// Table holds the table name of the user in the database.
 	Table = "users"
 	// CardTable is the table the holds the card relation/edge.
@@ -67,10 +67,10 @@ const (
 	// CardColumn is the table column denoting the card relation/edge.
 	CardColumn = "user_card"
 	// PetsTable is the table the holds the pets relation/edge.
-	PetsTable = "pets"
+	PetsTable = "pet"
 	// PetsInverseTable is the table name for the Pet entity.
 	// It exists in this package in order to avoid circular dependency with the "pet" package.
-	PetsInverseTable = "pets"
+	PetsInverseTable = "pet"
 	// PetsColumn is the table column denoting the pets relation/edge.
 	PetsColumn = "user_pets"
 	// FilesTable is the table the holds the files relation/edge.
@@ -92,10 +92,10 @@ const (
 	// FollowingTable is the table the holds the following relation/edge. The primary key declared below.
 	FollowingTable = "user_following"
 	// TeamTable is the table the holds the team relation/edge.
-	TeamTable = "pets"
+	TeamTable = "pet"
 	// TeamInverseTable is the table name for the Pet entity.
 	// It exists in this package in order to avoid circular dependency with the "pet" package.
-	TeamInverseTable = "pets"
+	TeamInverseTable = "pet"
 	// TeamColumn is the table column denoting the team relation/edge.
 	TeamColumn = "user_team"
 	// SpouseTable is the table the holds the spouse relation/edge.
@@ -120,13 +120,15 @@ var Columns = []string{
 	FieldName,
 	FieldLast,
 	FieldNickname,
+	FieldAddress,
 	FieldPhone,
 	FieldPassword,
 	FieldRole,
 	FieldSSOCert,
 }
 
-// ForeignKeys holds the SQL foreign-keys that are owned by the User type.
+// ForeignKeys holds the SQL foreign-keys that are owned by the "users"
+// table and are not defined as standalone fields in the schema.
 var ForeignKeys = []string{
 	"group_blocked",
 	"user_spouse",
@@ -148,24 +150,41 @@ var (
 	FollowingPrimaryKey = []string{"user_id", "follower_id"}
 )
 
+// ValidColumn reports if the column name is valid (part of the table columns).
+func ValidColumn(column string) bool {
+	for i := range Columns {
+		if column == Columns[i] {
+			return true
+		}
+	}
+	for i := range ForeignKeys {
+		if column == ForeignKeys[i] {
+			return true
+		}
+	}
+	return false
+}
+
 var (
 	// OptionalIntValidator is a validator for the "optional_int" field. It is called by the builders before save.
 	OptionalIntValidator func(int) error
-	// DefaultLast holds the default value on creation for the last field.
+	// DefaultLast holds the default value on creation for the "last" field.
 	DefaultLast string
+	// DefaultAddress holds the default value on creation for the "address" field.
+	DefaultAddress func() string
 )
 
-// Role defines the type for the role enum field.
+// Role defines the type for the "role" enum field.
 type Role string
 
-// RoleUser is the default Role.
+// RoleUser is the default value of the Role enum.
 const DefaultRole = RoleUser
 
 // Role values.
 const (
+	RoleUser     Role = "user"
 	RoleAdmin    Role = "admin"
 	RoleFreeUser Role = "free-user"
-	RoleUser     Role = "user"
 )
 
 func (r Role) String() string {
@@ -175,7 +194,7 @@ func (r Role) String() string {
 // RoleValidator is a validator for the "role" field enum values. It is called by the builders before save.
 func RoleValidator(r Role) error {
 	switch r {
-	case RoleAdmin, RoleFreeUser, RoleUser:
+	case RoleUser, RoleAdmin, RoleFreeUser:
 		return nil
 	default:
 		return fmt.Errorf("user: invalid enum value for role field: %q", r)

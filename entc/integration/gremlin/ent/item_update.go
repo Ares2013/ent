@@ -10,24 +10,23 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/facebook/ent/dialect/gremlin"
-	"github.com/facebook/ent/dialect/gremlin/graph/dsl"
-	"github.com/facebook/ent/dialect/gremlin/graph/dsl/g"
-	"github.com/facebook/ent/entc/integration/gremlin/ent/item"
-	"github.com/facebook/ent/entc/integration/gremlin/ent/predicate"
+	"entgo.io/ent/dialect/gremlin"
+	"entgo.io/ent/dialect/gremlin/graph/dsl"
+	"entgo.io/ent/dialect/gremlin/graph/dsl/g"
+	"entgo.io/ent/entc/integration/gremlin/ent/item"
+	"entgo.io/ent/entc/integration/gremlin/ent/predicate"
 )
 
 // ItemUpdate is the builder for updating Item entities.
 type ItemUpdate struct {
 	config
-	hooks      []Hook
-	mutation   *ItemMutation
-	predicates []predicate.Item
+	hooks    []Hook
+	mutation *ItemMutation
 }
 
-// Where adds a new predicate for the builder.
+// Where adds a new predicate for the ItemUpdate builder.
 func (iu *ItemUpdate) Where(ps ...predicate.Item) *ItemUpdate {
-	iu.predicates = append(iu.predicates, ps...)
+	iu.mutation.predicates = append(iu.mutation.predicates, ps...)
 	return iu
 }
 
@@ -36,7 +35,7 @@ func (iu *ItemUpdate) Mutation() *ItemMutation {
 	return iu.mutation
 }
 
-// Save executes the query and returns the number of rows/vertices matched by this operation.
+// Save executes the query and returns the number of nodes affected by the update operation.
 func (iu *ItemUpdate) Save(ctx context.Context) (int, error) {
 	var (
 		err      error
@@ -101,7 +100,7 @@ func (iu *ItemUpdate) gremlinSave(ctx context.Context) (int, error) {
 
 func (iu *ItemUpdate) gremlin() *dsl.Traversal {
 	v := g.V().HasLabel(item.Label)
-	for _, p := range iu.predicates {
+	for _, p := range iu.mutation.predicates {
 		p(v)
 	}
 	var (
@@ -115,6 +114,7 @@ func (iu *ItemUpdate) gremlin() *dsl.Traversal {
 // ItemUpdateOne is the builder for updating a single Item entity.
 type ItemUpdateOne struct {
 	config
+	fields   []string
 	hooks    []Hook
 	mutation *ItemMutation
 }
@@ -124,7 +124,14 @@ func (iuo *ItemUpdateOne) Mutation() *ItemMutation {
 	return iuo.mutation
 }
 
-// Save executes the query and returns the updated entity.
+// Select allows selecting one or more fields (columns) of the returned entity.
+// The default is selecting all fields defined in the entity schema.
+func (iuo *ItemUpdateOne) Select(field string, fields ...string) *ItemUpdateOne {
+	iuo.fields = append([]string{field}, fields...)
+	return iuo
+}
+
+// Save executes the query and returns the updated Item entity.
 func (iuo *ItemUpdateOne) Save(ctx context.Context) (*Item, error) {
 	var (
 		err  error
@@ -155,11 +162,11 @@ func (iuo *ItemUpdateOne) Save(ctx context.Context) (*Item, error) {
 
 // SaveX is like Save, but panics if an error occurs.
 func (iuo *ItemUpdateOne) SaveX(ctx context.Context) *Item {
-	i, err := iuo.Save(ctx)
+	node, err := iuo.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
-	return i
+	return node
 }
 
 // Exec executes the query on the entity.
@@ -200,7 +207,16 @@ func (iuo *ItemUpdateOne) gremlin(id string) *dsl.Traversal {
 	var (
 		trs []*dsl.Traversal
 	)
-	v.ValueMap(true)
+	if len(iuo.fields) > 0 {
+		fields := make([]interface{}, 0, len(iuo.fields)+1)
+		fields = append(fields, true)
+		for _, f := range iuo.fields {
+			fields = append(fields, f)
+		}
+		v.ValueMap(fields...)
+	} else {
+		v.ValueMap(true)
+	}
 	trs = append(trs, v)
 	return dsl.Join(trs...)
 }

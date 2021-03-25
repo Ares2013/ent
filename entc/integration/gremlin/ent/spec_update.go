@@ -10,35 +10,34 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/facebook/ent/dialect/gremlin"
-	"github.com/facebook/ent/dialect/gremlin/graph/dsl"
-	"github.com/facebook/ent/dialect/gremlin/graph/dsl/__"
-	"github.com/facebook/ent/dialect/gremlin/graph/dsl/g"
-	"github.com/facebook/ent/entc/integration/gremlin/ent/predicate"
-	"github.com/facebook/ent/entc/integration/gremlin/ent/spec"
+	"entgo.io/ent/dialect/gremlin"
+	"entgo.io/ent/dialect/gremlin/graph/dsl"
+	"entgo.io/ent/dialect/gremlin/graph/dsl/__"
+	"entgo.io/ent/dialect/gremlin/graph/dsl/g"
+	"entgo.io/ent/entc/integration/gremlin/ent/predicate"
+	"entgo.io/ent/entc/integration/gremlin/ent/spec"
 )
 
 // SpecUpdate is the builder for updating Spec entities.
 type SpecUpdate struct {
 	config
-	hooks      []Hook
-	mutation   *SpecMutation
-	predicates []predicate.Spec
+	hooks    []Hook
+	mutation *SpecMutation
 }
 
-// Where adds a new predicate for the builder.
+// Where adds a new predicate for the SpecUpdate builder.
 func (su *SpecUpdate) Where(ps ...predicate.Spec) *SpecUpdate {
-	su.predicates = append(su.predicates, ps...)
+	su.mutation.predicates = append(su.mutation.predicates, ps...)
 	return su
 }
 
-// AddCardIDs adds the card edge to Card by ids.
+// AddCardIDs adds the "card" edge to the Card entity by IDs.
 func (su *SpecUpdate) AddCardIDs(ids ...string) *SpecUpdate {
 	su.mutation.AddCardIDs(ids...)
 	return su
 }
 
-// AddCard adds the card edges to Card.
+// AddCard adds the "card" edges to the Card entity.
 func (su *SpecUpdate) AddCard(c ...*Card) *SpecUpdate {
 	ids := make([]string, len(c))
 	for i := range c {
@@ -52,13 +51,19 @@ func (su *SpecUpdate) Mutation() *SpecMutation {
 	return su.mutation
 }
 
-// RemoveCardIDs removes the card edge to Card by ids.
+// ClearCard clears all "card" edges to the Card entity.
+func (su *SpecUpdate) ClearCard() *SpecUpdate {
+	su.mutation.ClearCard()
+	return su
+}
+
+// RemoveCardIDs removes the "card" edge to Card entities by IDs.
 func (su *SpecUpdate) RemoveCardIDs(ids ...string) *SpecUpdate {
 	su.mutation.RemoveCardIDs(ids...)
 	return su
 }
 
-// RemoveCard removes card edges to Card.
+// RemoveCard removes "card" edges to Card entities.
 func (su *SpecUpdate) RemoveCard(c ...*Card) *SpecUpdate {
 	ids := make([]string, len(c))
 	for i := range c {
@@ -67,9 +72,8 @@ func (su *SpecUpdate) RemoveCard(c ...*Card) *SpecUpdate {
 	return su.RemoveCardIDs(ids...)
 }
 
-// Save executes the query and returns the number of rows/vertices matched by this operation.
+// Save executes the query and returns the number of nodes affected by the update operation.
 func (su *SpecUpdate) Save(ctx context.Context) (int, error) {
-
 	var (
 		err      error
 		affected int
@@ -133,7 +137,7 @@ func (su *SpecUpdate) gremlinSave(ctx context.Context) (int, error) {
 
 func (su *SpecUpdate) gremlin() *dsl.Traversal {
 	v := g.V().HasLabel(spec.Label)
-	for _, p := range su.predicates {
+	for _, p := range su.mutation.predicates {
 		p(v)
 	}
 	var (
@@ -157,17 +161,18 @@ func (su *SpecUpdate) gremlin() *dsl.Traversal {
 // SpecUpdateOne is the builder for updating a single Spec entity.
 type SpecUpdateOne struct {
 	config
+	fields   []string
 	hooks    []Hook
 	mutation *SpecMutation
 }
 
-// AddCardIDs adds the card edge to Card by ids.
+// AddCardIDs adds the "card" edge to the Card entity by IDs.
 func (suo *SpecUpdateOne) AddCardIDs(ids ...string) *SpecUpdateOne {
 	suo.mutation.AddCardIDs(ids...)
 	return suo
 }
 
-// AddCard adds the card edges to Card.
+// AddCard adds the "card" edges to the Card entity.
 func (suo *SpecUpdateOne) AddCard(c ...*Card) *SpecUpdateOne {
 	ids := make([]string, len(c))
 	for i := range c {
@@ -181,13 +186,19 @@ func (suo *SpecUpdateOne) Mutation() *SpecMutation {
 	return suo.mutation
 }
 
-// RemoveCardIDs removes the card edge to Card by ids.
+// ClearCard clears all "card" edges to the Card entity.
+func (suo *SpecUpdateOne) ClearCard() *SpecUpdateOne {
+	suo.mutation.ClearCard()
+	return suo
+}
+
+// RemoveCardIDs removes the "card" edge to Card entities by IDs.
 func (suo *SpecUpdateOne) RemoveCardIDs(ids ...string) *SpecUpdateOne {
 	suo.mutation.RemoveCardIDs(ids...)
 	return suo
 }
 
-// RemoveCard removes card edges to Card.
+// RemoveCard removes "card" edges to Card entities.
 func (suo *SpecUpdateOne) RemoveCard(c ...*Card) *SpecUpdateOne {
 	ids := make([]string, len(c))
 	for i := range c {
@@ -196,9 +207,15 @@ func (suo *SpecUpdateOne) RemoveCard(c ...*Card) *SpecUpdateOne {
 	return suo.RemoveCardIDs(ids...)
 }
 
-// Save executes the query and returns the updated entity.
-func (suo *SpecUpdateOne) Save(ctx context.Context) (*Spec, error) {
+// Select allows selecting one or more fields (columns) of the returned entity.
+// The default is selecting all fields defined in the entity schema.
+func (suo *SpecUpdateOne) Select(field string, fields ...string) *SpecUpdateOne {
+	suo.fields = append([]string{field}, fields...)
+	return suo
+}
 
+// Save executes the query and returns the updated Spec entity.
+func (suo *SpecUpdateOne) Save(ctx context.Context) (*Spec, error) {
 	var (
 		err  error
 		node *Spec
@@ -228,11 +245,11 @@ func (suo *SpecUpdateOne) Save(ctx context.Context) (*Spec, error) {
 
 // SaveX is like Save, but panics if an error occurs.
 func (suo *SpecUpdateOne) SaveX(ctx context.Context) *Spec {
-	s, err := suo.Save(ctx)
+	node, err := suo.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
-	return s
+	return node
 }
 
 // Exec executes the query on the entity.
@@ -283,7 +300,16 @@ func (suo *SpecUpdateOne) gremlin(id string) *dsl.Traversal {
 	for _, id := range suo.mutation.CardIDs() {
 		v.AddE(spec.CardLabel).To(g.V(id)).OutV()
 	}
-	v.ValueMap(true)
+	if len(suo.fields) > 0 {
+		fields := make([]interface{}, 0, len(suo.fields)+1)
+		fields = append(fields, true)
+		for _, f := range suo.fields {
+			fields = append(fields, f)
+		}
+		v.ValueMap(fields...)
+	} else {
+		v.ValueMap(true)
+	}
 	trs = append(trs, v)
 	return dsl.Join(trs...)
 }

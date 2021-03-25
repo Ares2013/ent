@@ -13,12 +13,10 @@ const (
 	FieldID = "id"
 	// FieldName holds the string denoting the name field in the database.
 	FieldName = "name"
-
 	// EdgePets holds the string denoting the pets edge name in mutations.
 	EdgePets = "pets"
 	// EdgeFriends holds the string denoting the friends edge name in mutations.
 	EdgeFriends = "friends"
-
 	// Table holds the table name of the user in the database.
 	Table = "users"
 	// PetsTable is the table the holds the pets relation/edge.
@@ -43,3 +41,13 @@ var (
 	// primary key for the friends relation (M2M).
 	FriendsPrimaryKey = []string{"user_id", "friend_id"}
 )
+
+// ValidColumn reports if the column name is valid (part of the table columns).
+func ValidColumn(column string) bool {
+	for i := range Columns {
+		if column == Columns[i] {
+			return true
+		}
+	}
+	return false
+}

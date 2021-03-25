@@ -11,12 +11,12 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/facebook/ent/dialect/gremlin"
-	"github.com/facebook/ent/dialect/gremlin/graph/dsl"
-	"github.com/facebook/ent/dialect/gremlin/graph/dsl/__"
-	"github.com/facebook/ent/dialect/gremlin/graph/dsl/g"
-	"github.com/facebook/ent/dialect/gremlin/graph/dsl/p"
-	"github.com/facebook/ent/entc/integration/gremlin/ent/comment"
+	"entgo.io/ent/dialect/gremlin"
+	"entgo.io/ent/dialect/gremlin/graph/dsl"
+	"entgo.io/ent/dialect/gremlin/graph/dsl/__"
+	"entgo.io/ent/dialect/gremlin/graph/dsl/g"
+	"entgo.io/ent/dialect/gremlin/graph/dsl/p"
+	"entgo.io/ent/entc/integration/gremlin/ent/comment"
 )
 
 // CommentCreate is the builder for creating a Comment entity.
@@ -26,25 +26,25 @@ type CommentCreate struct {
 	hooks    []Hook
 }
 
-// SetUniqueInt sets the unique_int field.
+// SetUniqueInt sets the "unique_int" field.
 func (cc *CommentCreate) SetUniqueInt(i int) *CommentCreate {
 	cc.mutation.SetUniqueInt(i)
 	return cc
 }
 
-// SetUniqueFloat sets the unique_float field.
+// SetUniqueFloat sets the "unique_float" field.
 func (cc *CommentCreate) SetUniqueFloat(f float64) *CommentCreate {
 	cc.mutation.SetUniqueFloat(f)
 	return cc
 }
 
-// SetNillableInt sets the nillable_int field.
+// SetNillableInt sets the "nillable_int" field.
 func (cc *CommentCreate) SetNillableInt(i int) *CommentCreate {
 	cc.mutation.SetNillableInt(i)
 	return cc
 }
 
-// SetNillableNillableInt sets the nillable_int field if the given value is not nil.
+// SetNillableNillableInt sets the "nillable_int" field if the given value is not nil.
 func (cc *CommentCreate) SetNillableNillableInt(i *int) *CommentCreate {
 	if i != nil {
 		cc.SetNillableInt(*i)
@@ -59,20 +59,23 @@ func (cc *CommentCreate) Mutation() *CommentMutation {
 
 // Save creates the Comment in the database.
 func (cc *CommentCreate) Save(ctx context.Context) (*Comment, error) {
-	if err := cc.preSave(); err != nil {
-		return nil, err
-	}
 	var (
 		err  error
 		node *Comment
 	)
 	if len(cc.hooks) == 0 {
+		if err = cc.check(); err != nil {
+			return nil, err
+		}
 		node, err = cc.gremlinSave(ctx)
 	} else {
 		var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 			mutation, ok := m.(*CommentMutation)
 			if !ok {
 				return nil, fmt.Errorf("unexpected mutation type %T", m)
+			}
+			if err = cc.check(); err != nil {
+				return nil, err
 			}
 			cc.mutation = mutation
 			node, err = cc.gremlinSave(ctx)
@@ -98,7 +101,8 @@ func (cc *CommentCreate) SaveX(ctx context.Context) *Comment {
 	return v
 }
 
-func (cc *CommentCreate) preSave() error {
+// check runs all checks and user-defined validators on the builder.
+func (cc *CommentCreate) check() error {
 	if _, ok := cc.mutation.UniqueInt(); !ok {
 		return &ValidationError{Name: "unique_int", err: errors.New("ent: missing required field \"unique_int\"")}
 	}
@@ -158,7 +162,7 @@ func (cc *CommentCreate) gremlin() *dsl.Traversal {
 	return tr
 }
 
-// CommentCreateBulk is the builder for creating a bulk of Comment entities.
+// CommentCreateBulk is the builder for creating many Comment entities in bulk.
 type CommentCreateBulk struct {
 	config
 	builders []*CommentCreate

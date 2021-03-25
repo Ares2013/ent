@@ -8,8 +8,10 @@ package fieldtype
 
 import (
 	"fmt"
+	"net"
 
-	"github.com/facebook/ent/entc/integration/ent/role"
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/entc/integration/ent/role"
 )
 
 const (
@@ -59,6 +61,8 @@ const (
 	FieldOptionalUint32 = "optional_uint32"
 	// FieldOptionalUint64 holds the string denoting the optional_uint64 field in the database.
 	FieldOptionalUint64 = "optional_uint64"
+	// FieldDuration holds the string denoting the duration field in the database.
+	FieldDuration = "duration"
 	// FieldState holds the string denoting the state field in the database.
 	FieldState = "state"
 	// FieldOptionalFloat holds the string denoting the optional_float field in the database.
@@ -79,6 +83,8 @@ const (
 	FieldNullStr = "null_str"
 	// FieldLink holds the string denoting the link field in the database.
 	FieldLink = "link"
+	// FieldLinkOther holds the string denoting the link_other field in the database.
+	FieldLinkOther = "link_other"
 	// FieldNullLink holds the string denoting the null_link field in the database.
 	FieldNullLink = "null_link"
 	// FieldActive holds the string denoting the active field in the database.
@@ -107,7 +113,10 @@ const (
 	FieldNullFloat = "null_float"
 	// FieldRole holds the string denoting the role field in the database.
 	FieldRole = "role"
-
+	// FieldMAC holds the string denoting the mac field in the database.
+	FieldMAC = "mac"
+	// FieldUUID holds the string denoting the uuid field in the database.
+	FieldUUID = "uuid"
 	// Table holds the table name of the fieldtype in the database.
 	Table = "field_types"
 )
@@ -136,6 +145,7 @@ var Columns = []string{
 	FieldOptionalUint16,
 	FieldOptionalUint32,
 	FieldOptionalUint64,
+	FieldDuration,
 	FieldState,
 	FieldOptionalFloat,
 	FieldOptionalFloat32,
@@ -146,6 +156,7 @@ var Columns = []string{
 	FieldStr,
 	FieldNullStr,
 	FieldLink,
+	FieldLinkOther,
 	FieldNullLink,
 	FieldActive,
 	FieldNullActive,
@@ -160,11 +171,29 @@ var Columns = []string{
 	FieldSchemaFloat32,
 	FieldNullFloat,
 	FieldRole,
+	FieldMAC,
+	FieldUUID,
 }
 
-// ForeignKeys holds the SQL foreign-keys that are owned by the FieldType type.
+// ForeignKeys holds the SQL foreign-keys that are owned by the "field_types"
+// table and are not defined as standalone fields in the schema.
 var ForeignKeys = []string{
 	"file_field",
+}
+
+// ValidColumn reports if the column name is valid (part of the table columns).
+func ValidColumn(column string) bool {
+	for i := range Columns {
+		if column == Columns[i] {
+			return true
+		}
+	}
+	for i := range ForeignKeys {
+		if column == ForeignKeys[i] {
+			return true
+		}
+	}
+	return false
 }
 
 var (
@@ -172,17 +201,25 @@ var (
 	ValidateOptionalInt32Validator func(int32) error
 	// NdirValidator is a validator for the "ndir" field. It is called by the builders before save.
 	NdirValidator func(string) error
+	// DefaultStr holds the default value on creation for the "str" field.
+	DefaultStr func() sql.NullString
+	// DefaultNullStr holds the default value on creation for the "null_str" field.
+	DefaultNullStr func() sql.NullString
 	// LinkValidator is a validator for the "link" field. It is called by the builders before save.
 	LinkValidator func(string) error
+	// DefaultIP holds the default value on creation for the "ip" field.
+	DefaultIP func() net.IP
+	// MACValidator is a validator for the "mac" field. It is called by the builders before save.
+	MACValidator func(string) error
 )
 
-// State defines the type for the state enum field.
+// State defines the type for the "state" enum field.
 type State string
 
 // State values.
 const (
-	StateOff State = "off"
 	StateOn  State = "on"
+	StateOff State = "off"
 )
 
 func (s State) String() string {
@@ -192,7 +229,7 @@ func (s State) String() string {
 // StateValidator is a validator for the "state" field enum values. It is called by the builders before save.
 func StateValidator(s State) error {
 	switch s {
-	case StateOff, StateOn:
+	case StateOn, StateOff:
 		return nil
 	default:
 		return fmt.Errorf("fieldtype: invalid enum value for state field: %q", s)
@@ -204,7 +241,7 @@ const DefaultRole role.Role = "READ"
 // RoleValidator is a validator for the "role" field enum values. It is called by the builders before save.
 func RoleValidator(r role.Role) error {
 	switch r {
-	case "ADMIN", "OWNER", "READ", "USER", "WRITE":
+	case "ADMIN", "OWNER", "USER", "READ", "WRITE":
 		return nil
 	default:
 		return fmt.Errorf("fieldtype: invalid enum value for role field: %q", r)

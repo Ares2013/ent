@@ -13,10 +13,8 @@ const (
 	FieldID = "id"
 	// FieldName holds the string denoting the name field in the database.
 	FieldName = "name"
-
 	// EdgeStreets holds the string denoting the streets edge name in mutations.
 	EdgeStreets = "streets"
-
 	// Table holds the table name of the city in the database.
 	Table = "cities"
 	// StreetsTable is the table the holds the streets relation/edge.
@@ -32,4 +30,14 @@ const (
 var Columns = []string{
 	FieldID,
 	FieldName,
+}
+
+// ValidColumn reports if the column name is valid (part of the table columns).
+func ValidColumn(column string) bool {
+	for i := range Columns {
+		if column == Columns[i] {
+			return true
+		}
+	}
+	return false
 }

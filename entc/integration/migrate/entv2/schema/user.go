@@ -5,11 +5,11 @@
 package schema
 
 import (
-	"github.com/facebook/ent"
-	"github.com/facebook/ent/schema/edge"
-	"github.com/facebook/ent/schema/field"
-	"github.com/facebook/ent/schema/index"
-	"github.com/facebook/ent/schema/mixin"
+	"entgo.io/ent"
+	"entgo.io/ent/schema/edge"
+	"entgo.io/ent/schema/field"
+	"entgo.io/ent/schema/index"
+	"entgo.io/ent/schema/mixin"
 )
 
 type Mixin struct {
@@ -47,12 +47,14 @@ func (User) Fields() []ent.Field {
 		// extending name field to longtext.
 		field.Text("name"),
 		// changing nickname from unique no non-unique.
-		field.String("nickname"),
+		field.String("nickname").
+			MaxLen(255),
 		// adding new columns (must be either optional, or with a default value).
 		field.String("phone").
 			Default("unknown"),
 		field.Bytes("buffer").
-			Optional(),
+			Optional().
+			DefaultFunc(func() []byte { return []byte("null") }),
 		// adding new column with supported default value
 		// in the database side, will append this value to
 		// all existing rows.
@@ -75,6 +77,9 @@ func (User) Fields() []ent.Field {
 		field.Enum("status").
 			Optional().
 			Values("done", "pending"),
+		// remove the max-length constraint from varchar.
+		field.String("workplace").
+			Optional(),
 		// deleting the `address` column.
 	}
 }

@@ -10,9 +10,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/facebook/ent/dialect/gremlin"
-	"github.com/facebook/ent/entc/integration/gremlin/ent/filetype"
-	"github.com/facebook/ent/entc/integration/gremlin/ent/user"
+	"entgo.io/ent/dialect/gremlin"
+	"entgo.io/ent/entc/integration/gremlin/ent/filetype"
+	"entgo.io/ent/entc/integration/gremlin/ent/user"
 )
 
 // File is the model entity for the File schema.
@@ -28,19 +28,21 @@ type File struct {
 	User *string `json:"user,omitempty"`
 	// Group holds the value of the "group" field.
 	Group string `json:"group,omitempty"`
+	// Op holds the value of the "op" field.
+	Op bool `json:"op,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the FileQuery when eager-loading is set.
-	Edges FileEdges `json:"edges"`
+	Edges FileEdges `json:"file_edges"`
 }
 
 // FileEdges holds the relations/edges for other nodes in the graph.
 type FileEdges struct {
 	// Owner holds the value of the owner edge.
-	Owner *User
+	Owner *User `json:"owner,omitempty"`
 	// Type holds the value of the type edge.
-	Type *FileType
+	Type *FileType `json:"type,omitempty"`
 	// Field holds the value of the field edge.
-	Field []*FieldType
+	Field []*FieldType `json:"field,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [3]bool
@@ -95,6 +97,7 @@ func (f *File) FromResponse(res *gremlin.Response) error {
 		Name  string  `json:"name,omitempty"`
 		User  *string `json:"user,omitempty"`
 		Group string  `json:"group,omitempty"`
+		Op    bool    `json:"op,omitempty"`
 	}
 	if err := vmap.Decode(&scanf); err != nil {
 		return err
@@ -104,33 +107,34 @@ func (f *File) FromResponse(res *gremlin.Response) error {
 	f.Name = scanf.Name
 	f.User = scanf.User
 	f.Group = scanf.Group
+	f.Op = scanf.Op
 	return nil
 }
 
-// QueryOwner queries the owner edge of the File.
+// QueryOwner queries the "owner" edge of the File entity.
 func (f *File) QueryOwner() *UserQuery {
 	return (&FileClient{config: f.config}).QueryOwner(f)
 }
 
-// QueryType queries the type edge of the File.
+// QueryType queries the "type" edge of the File entity.
 func (f *File) QueryType() *FileTypeQuery {
 	return (&FileClient{config: f.config}).QueryType(f)
 }
 
-// QueryField queries the field edge of the File.
+// QueryField queries the "field" edge of the File entity.
 func (f *File) QueryField() *FieldTypeQuery {
 	return (&FileClient{config: f.config}).QueryField(f)
 }
 
 // Update returns a builder for updating this File.
-// Note that, you need to call File.Unwrap() before calling this method, if this File
+// Note that you need to call File.Unwrap() before calling this method if this File
 // was returned from a transaction, and the transaction was committed or rolled back.
 func (f *File) Update() *FileUpdateOne {
 	return (&FileClient{config: f.config}).UpdateOne(f)
 }
 
-// Unwrap unwraps the entity that was returned from a transaction after it was closed,
-// so that all next queries will be executed through the driver which created the transaction.
+// Unwrap unwraps the File entity that was returned from a transaction after it was closed,
+// so that all future queries will be executed through the driver which created the transaction.
 func (f *File) Unwrap() *File {
 	tx, ok := f.config.driver.(*txDriver)
 	if !ok {
@@ -155,6 +159,8 @@ func (f *File) String() string {
 	}
 	builder.WriteString(", group=")
 	builder.WriteString(f.Group)
+	builder.WriteString(", op=")
+	builder.WriteString(fmt.Sprintf("%v", f.Op))
 	builder.WriteByte(')')
 	return builder.String()
 }
@@ -174,6 +180,7 @@ func (f *Files) FromResponse(res *gremlin.Response) error {
 		Name  string  `json:"name,omitempty"`
 		User  *string `json:"user,omitempty"`
 		Group string  `json:"group,omitempty"`
+		Op    bool    `json:"op,omitempty"`
 	}
 	if err := vmap.Decode(&scanf); err != nil {
 		return err
@@ -185,6 +192,7 @@ func (f *Files) FromResponse(res *gremlin.Response) error {
 			Name:  v.Name,
 			User:  v.User,
 			Group: v.Group,
+			Op:    v.Op,
 		})
 	}
 	return nil

@@ -11,10 +11,10 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/facebook/ent/dialect/sql/sqlgraph"
-	"github.com/facebook/ent/entc/integration/ent/file"
-	"github.com/facebook/ent/entc/integration/ent/filetype"
-	"github.com/facebook/ent/schema/field"
+	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/entc/integration/ent/file"
+	"entgo.io/ent/entc/integration/ent/filetype"
+	"entgo.io/ent/schema/field"
 )
 
 // FileTypeCreate is the builder for creating a FileType entity.
@@ -24,19 +24,19 @@ type FileTypeCreate struct {
 	hooks    []Hook
 }
 
-// SetName sets the name field.
+// SetName sets the "name" field.
 func (ftc *FileTypeCreate) SetName(s string) *FileTypeCreate {
 	ftc.mutation.SetName(s)
 	return ftc
 }
 
-// SetType sets the type field.
+// SetType sets the "type" field.
 func (ftc *FileTypeCreate) SetType(f filetype.Type) *FileTypeCreate {
 	ftc.mutation.SetType(f)
 	return ftc
 }
 
-// SetNillableType sets the type field if the given value is not nil.
+// SetNillableType sets the "type" field if the given value is not nil.
 func (ftc *FileTypeCreate) SetNillableType(f *filetype.Type) *FileTypeCreate {
 	if f != nil {
 		ftc.SetType(*f)
@@ -44,13 +44,13 @@ func (ftc *FileTypeCreate) SetNillableType(f *filetype.Type) *FileTypeCreate {
 	return ftc
 }
 
-// SetState sets the state field.
+// SetState sets the "state" field.
 func (ftc *FileTypeCreate) SetState(f filetype.State) *FileTypeCreate {
 	ftc.mutation.SetState(f)
 	return ftc
 }
 
-// SetNillableState sets the state field if the given value is not nil.
+// SetNillableState sets the "state" field if the given value is not nil.
 func (ftc *FileTypeCreate) SetNillableState(f *filetype.State) *FileTypeCreate {
 	if f != nil {
 		ftc.SetState(*f)
@@ -58,13 +58,13 @@ func (ftc *FileTypeCreate) SetNillableState(f *filetype.State) *FileTypeCreate {
 	return ftc
 }
 
-// AddFileIDs adds the files edge to File by ids.
+// AddFileIDs adds the "files" edge to the File entity by IDs.
 func (ftc *FileTypeCreate) AddFileIDs(ids ...int) *FileTypeCreate {
 	ftc.mutation.AddFileIDs(ids...)
 	return ftc
 }
 
-// AddFiles adds the files edges to File.
+// AddFiles adds the "files" edges to the File entity.
 func (ftc *FileTypeCreate) AddFiles(f ...*File) *FileTypeCreate {
 	ids := make([]int, len(f))
 	for i := range f {
@@ -80,20 +80,24 @@ func (ftc *FileTypeCreate) Mutation() *FileTypeMutation {
 
 // Save creates the FileType in the database.
 func (ftc *FileTypeCreate) Save(ctx context.Context) (*FileType, error) {
-	if err := ftc.preSave(); err != nil {
-		return nil, err
-	}
 	var (
 		err  error
 		node *FileType
 	)
+	ftc.defaults()
 	if len(ftc.hooks) == 0 {
+		if err = ftc.check(); err != nil {
+			return nil, err
+		}
 		node, err = ftc.sqlSave(ctx)
 	} else {
 		var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 			mutation, ok := m.(*FileTypeMutation)
 			if !ok {
 				return nil, fmt.Errorf("unexpected mutation type %T", m)
+			}
+			if err = ftc.check(); err != nil {
+				return nil, err
 			}
 			ftc.mutation = mutation
 			node, err = ftc.sqlSave(ctx)
@@ -119,13 +123,25 @@ func (ftc *FileTypeCreate) SaveX(ctx context.Context) *FileType {
 	return v
 }
 
-func (ftc *FileTypeCreate) preSave() error {
+// defaults sets the default values of the builder before save.
+func (ftc *FileTypeCreate) defaults() {
+	if _, ok := ftc.mutation.GetType(); !ok {
+		v := filetype.DefaultType
+		ftc.mutation.SetType(v)
+	}
+	if _, ok := ftc.mutation.State(); !ok {
+		v := filetype.DefaultState
+		ftc.mutation.SetState(v)
+	}
+}
+
+// check runs all checks and user-defined validators on the builder.
+func (ftc *FileTypeCreate) check() error {
 	if _, ok := ftc.mutation.Name(); !ok {
 		return &ValidationError{Name: "name", err: errors.New("ent: missing required field \"name\"")}
 	}
 	if _, ok := ftc.mutation.GetType(); !ok {
-		v := filetype.DefaultType
-		ftc.mutation.SetType(v)
+		return &ValidationError{Name: "type", err: errors.New("ent: missing required field \"type\"")}
 	}
 	if v, ok := ftc.mutation.GetType(); ok {
 		if err := filetype.TypeValidator(v); err != nil {
@@ -133,8 +149,7 @@ func (ftc *FileTypeCreate) preSave() error {
 		}
 	}
 	if _, ok := ftc.mutation.State(); !ok {
-		v := filetype.DefaultState
-		ftc.mutation.SetState(v)
+		return &ValidationError{Name: "state", err: errors.New("ent: missing required field \"state\"")}
 	}
 	if v, ok := ftc.mutation.State(); ok {
 		if err := filetype.StateValidator(v); err != nil {
@@ -145,7 +160,7 @@ func (ftc *FileTypeCreate) preSave() error {
 }
 
 func (ftc *FileTypeCreate) sqlSave(ctx context.Context) (*FileType, error) {
-	ft, _spec := ftc.createSpec()
+	_node, _spec := ftc.createSpec()
 	if err := sqlgraph.CreateNode(ctx, ftc.driver, _spec); err != nil {
 		if cerr, ok := isSQLConstraintError(err); ok {
 			err = cerr
@@ -153,13 +168,13 @@ func (ftc *FileTypeCreate) sqlSave(ctx context.Context) (*FileType, error) {
 		return nil, err
 	}
 	id := _spec.ID.Value.(int64)
-	ft.ID = int(id)
-	return ft, nil
+	_node.ID = int(id)
+	return _node, nil
 }
 
 func (ftc *FileTypeCreate) createSpec() (*FileType, *sqlgraph.CreateSpec) {
 	var (
-		ft    = &FileType{config: ftc.config}
+		_node = &FileType{config: ftc.config}
 		_spec = &sqlgraph.CreateSpec{
 			Table: filetype.Table,
 			ID: &sqlgraph.FieldSpec{
@@ -174,7 +189,7 @@ func (ftc *FileTypeCreate) createSpec() (*FileType, *sqlgraph.CreateSpec) {
 			Value:  value,
 			Column: filetype.FieldName,
 		})
-		ft.Name = value
+		_node.Name = value
 	}
 	if value, ok := ftc.mutation.GetType(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
@@ -182,7 +197,7 @@ func (ftc *FileTypeCreate) createSpec() (*FileType, *sqlgraph.CreateSpec) {
 			Value:  value,
 			Column: filetype.FieldType,
 		})
-		ft.Type = value
+		_node.Type = value
 	}
 	if value, ok := ftc.mutation.State(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
@@ -190,7 +205,7 @@ func (ftc *FileTypeCreate) createSpec() (*FileType, *sqlgraph.CreateSpec) {
 			Value:  value,
 			Column: filetype.FieldState,
 		})
-		ft.State = value
+		_node.State = value
 	}
 	if nodes := ftc.mutation.FilesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -211,10 +226,10 @@ func (ftc *FileTypeCreate) createSpec() (*FileType, *sqlgraph.CreateSpec) {
 		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	return ft, _spec
+	return _node, _spec
 }
 
-// FileTypeCreateBulk is the builder for creating a bulk of FileType entities.
+// FileTypeCreateBulk is the builder for creating many FileType entities in bulk.
 type FileTypeCreateBulk struct {
 	config
 	builders []*FileTypeCreate
@@ -228,13 +243,14 @@ func (ftcb *FileTypeCreateBulk) Save(ctx context.Context) ([]*FileType, error) {
 	for i := range ftcb.builders {
 		func(i int, root context.Context) {
 			builder := ftcb.builders[i]
+			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
-				if err := builder.preSave(); err != nil {
-					return nil, err
-				}
 				mutation, ok := m.(*FileTypeMutation)
 				if !ok {
 					return nil, fmt.Errorf("unexpected mutation type %T", m)
+				}
+				if err := builder.check(); err != nil {
+					return nil, err
 				}
 				builder.mutation = mutation
 				nodes[i], specs[i] = builder.createSpec()
@@ -271,7 +287,7 @@ func (ftcb *FileTypeCreateBulk) Save(ctx context.Context) ([]*FileType, error) {
 	return nodes, nil
 }
 
-// SaveX calls Save and panics if Save returns an error.
+// SaveX is like Save, but panics if an error occurs.
 func (ftcb *FileTypeCreateBulk) SaveX(ctx context.Context) []*FileType {
 	v, err := ftcb.Save(ctx)
 	if err != nil {

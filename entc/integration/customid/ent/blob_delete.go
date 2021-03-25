@@ -10,24 +10,23 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/facebook/ent/dialect/sql"
-	"github.com/facebook/ent/dialect/sql/sqlgraph"
-	"github.com/facebook/ent/entc/integration/customid/ent/blob"
-	"github.com/facebook/ent/entc/integration/customid/ent/predicate"
-	"github.com/facebook/ent/schema/field"
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/entc/integration/customid/ent/blob"
+	"entgo.io/ent/entc/integration/customid/ent/predicate"
+	"entgo.io/ent/schema/field"
 )
 
 // BlobDelete is the builder for deleting a Blob entity.
 type BlobDelete struct {
 	config
-	hooks      []Hook
-	mutation   *BlobMutation
-	predicates []predicate.Blob
+	hooks    []Hook
+	mutation *BlobMutation
 }
 
-// Where adds a new predicate to the delete builder.
+// Where adds a new predicate to the BlobDelete builder.
 func (bd *BlobDelete) Where(ps ...predicate.Blob) *BlobDelete {
-	bd.predicates = append(bd.predicates, ps...)
+	bd.mutation.predicates = append(bd.mutation.predicates, ps...)
 	return bd
 }
 
@@ -79,7 +78,7 @@ func (bd *BlobDelete) sqlExec(ctx context.Context) (int, error) {
 			},
 		},
 	}
-	if ps := bd.predicates; len(ps) > 0 {
+	if ps := bd.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)

@@ -11,13 +11,14 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/facebook/ent/dialect/gremlin"
-	"github.com/facebook/ent/dialect/gremlin/graph/dsl"
-	"github.com/facebook/ent/dialect/gremlin/graph/dsl/__"
-	"github.com/facebook/ent/dialect/gremlin/graph/dsl/g"
-	"github.com/facebook/ent/dialect/gremlin/graph/dsl/p"
-	"github.com/facebook/ent/entc/integration/gremlin/ent/pet"
-	"github.com/facebook/ent/entc/integration/gremlin/ent/user"
+	"entgo.io/ent/dialect/gremlin"
+	"entgo.io/ent/dialect/gremlin/graph/dsl"
+	"entgo.io/ent/dialect/gremlin/graph/dsl/__"
+	"entgo.io/ent/dialect/gremlin/graph/dsl/g"
+	"entgo.io/ent/dialect/gremlin/graph/dsl/p"
+	"entgo.io/ent/entc/integration/gremlin/ent/pet"
+	"entgo.io/ent/entc/integration/gremlin/ent/user"
+	"github.com/google/uuid"
 )
 
 // PetCreate is the builder for creating a Pet entity.
@@ -27,19 +28,25 @@ type PetCreate struct {
 	hooks    []Hook
 }
 
-// SetName sets the name field.
+// SetName sets the "name" field.
 func (pc *PetCreate) SetName(s string) *PetCreate {
 	pc.mutation.SetName(s)
 	return pc
 }
 
-// SetTeamID sets the team edge to User by id.
+// SetUUID sets the "uuid" field.
+func (pc *PetCreate) SetUUID(u uuid.UUID) *PetCreate {
+	pc.mutation.SetUUID(u)
+	return pc
+}
+
+// SetTeamID sets the "team" edge to the User entity by ID.
 func (pc *PetCreate) SetTeamID(id string) *PetCreate {
 	pc.mutation.SetTeamID(id)
 	return pc
 }
 
-// SetNillableTeamID sets the team edge to User by id if the given value is not nil.
+// SetNillableTeamID sets the "team" edge to the User entity by ID if the given value is not nil.
 func (pc *PetCreate) SetNillableTeamID(id *string) *PetCreate {
 	if id != nil {
 		pc = pc.SetTeamID(*id)
@@ -47,18 +54,18 @@ func (pc *PetCreate) SetNillableTeamID(id *string) *PetCreate {
 	return pc
 }
 
-// SetTeam sets the team edge to User.
+// SetTeam sets the "team" edge to the User entity.
 func (pc *PetCreate) SetTeam(u *User) *PetCreate {
 	return pc.SetTeamID(u.ID)
 }
 
-// SetOwnerID sets the owner edge to User by id.
+// SetOwnerID sets the "owner" edge to the User entity by ID.
 func (pc *PetCreate) SetOwnerID(id string) *PetCreate {
 	pc.mutation.SetOwnerID(id)
 	return pc
 }
 
-// SetNillableOwnerID sets the owner edge to User by id if the given value is not nil.
+// SetNillableOwnerID sets the "owner" edge to the User entity by ID if the given value is not nil.
 func (pc *PetCreate) SetNillableOwnerID(id *string) *PetCreate {
 	if id != nil {
 		pc = pc.SetOwnerID(*id)
@@ -66,7 +73,7 @@ func (pc *PetCreate) SetNillableOwnerID(id *string) *PetCreate {
 	return pc
 }
 
-// SetOwner sets the owner edge to User.
+// SetOwner sets the "owner" edge to the User entity.
 func (pc *PetCreate) SetOwner(u *User) *PetCreate {
 	return pc.SetOwnerID(u.ID)
 }
@@ -78,20 +85,23 @@ func (pc *PetCreate) Mutation() *PetMutation {
 
 // Save creates the Pet in the database.
 func (pc *PetCreate) Save(ctx context.Context) (*Pet, error) {
-	if err := pc.preSave(); err != nil {
-		return nil, err
-	}
 	var (
 		err  error
 		node *Pet
 	)
 	if len(pc.hooks) == 0 {
+		if err = pc.check(); err != nil {
+			return nil, err
+		}
 		node, err = pc.gremlinSave(ctx)
 	} else {
 		var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 			mutation, ok := m.(*PetMutation)
 			if !ok {
 				return nil, fmt.Errorf("unexpected mutation type %T", m)
+			}
+			if err = pc.check(); err != nil {
+				return nil, err
 			}
 			pc.mutation = mutation
 			node, err = pc.gremlinSave(ctx)
@@ -117,7 +127,8 @@ func (pc *PetCreate) SaveX(ctx context.Context) *Pet {
 	return v
 }
 
-func (pc *PetCreate) preSave() error {
+// check runs all checks and user-defined validators on the builder.
+func (pc *PetCreate) check() error {
 	if _, ok := pc.mutation.Name(); !ok {
 		return &ValidationError{Name: "name", err: errors.New("ent: missing required field \"name\"")}
 	}
@@ -150,6 +161,9 @@ func (pc *PetCreate) gremlin() *dsl.Traversal {
 	if value, ok := pc.mutation.Name(); ok {
 		v.Property(dsl.Single, pet.FieldName, value)
 	}
+	if value, ok := pc.mutation.UUID(); ok {
+		v.Property(dsl.Single, pet.FieldUUID, value)
+	}
 	for _, id := range pc.mutation.TeamIDs() {
 		v.AddE(user.TeamLabel).From(g.V(id)).InV()
 		constraints = append(constraints, &constraint{
@@ -170,7 +184,7 @@ func (pc *PetCreate) gremlin() *dsl.Traversal {
 	return tr
 }
 
-// PetCreateBulk is the builder for creating a bulk of Pet entities.
+// PetCreateBulk is the builder for creating many Pet entities in bulk.
 type PetCreateBulk struct {
 	config
 	builders []*PetCreate

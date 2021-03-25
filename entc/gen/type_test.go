@@ -7,8 +7,8 @@ package gen
 import (
 	"testing"
 
-	"github.com/facebook/ent/entc/load"
-	"github.com/facebook/ent/schema/field"
+	"entgo.io/ent/entc/load"
+	"entgo.io/ent/schema/field"
 
 	"github.com/stretchr/testify/require"
 )
@@ -49,7 +49,7 @@ func TestType(t *testing.T) {
 	_, err = NewType(&Config{Package: "entc/gen"}, &load.Schema{
 		Name: "T",
 		Fields: []*load.Field{
-			{Name: "enums", Info: &field.TypeInfo{Type: field.TypeEnum}, Enums: map[string]string{"": ""}},
+			{Name: "enums", Info: &field.TypeInfo{Type: field.TypeEnum}, Enums: []struct{ N, V string }{{V: "v"}, {V: "v"}}},
 		},
 	})
 	require.Error(err, "duplicate enums")
@@ -57,7 +57,7 @@ func TestType(t *testing.T) {
 	_, err = NewType(&Config{Package: "entc/gen"}, &load.Schema{
 		Name: "T",
 		Fields: []*load.Field{
-			{Name: "enums", Info: &field.TypeInfo{Type: field.TypeEnum}, Enums: map[string]string{"": ""}},
+			{Name: "enums", Info: &field.TypeInfo{Type: field.TypeEnum}, Enums: []struct{ N, V string }{{}}},
 		},
 	})
 	require.Error(err, "empty value for enums")
@@ -221,6 +221,9 @@ func TestType_AddIndex(t *testing.T) {
 	err = typ.AddIndex(&load.Index{Unique: true, Fields: []string{"unknown"}})
 	require.Error(t, err, "unknown field for index")
 
+	err = typ.AddIndex(&load.Index{Unique: true, Fields: []string{"id"}})
+	require.NoError(t, err, "valid index for ID field")
+
 	err = typ.AddIndex(&load.Index{Unique: true, Fields: []string{"text"}})
 	require.Error(t, err, "index size exceeded")
 
@@ -270,6 +273,23 @@ func TestField_DefaultName(t *testing.T) {
 	}
 }
 
+func TestField_incremental(t *testing.T) {
+	tests := []struct {
+		annotations map[string]interface{}
+		def         bool
+		expected    bool
+	}{
+		{dict("EntSQL", nil), false, false},
+		{dict("EntSQL", nil), true, true},
+		{dict("EntSQL", dict("incremental", true)), false, true},
+		{dict("EntSQL", dict("incremental", false)), true, false},
+	}
+	for _, tt := range tests {
+		typ := &Field{Annotations: tt.annotations}
+		require.Equal(t, tt.expected, typ.incremental(tt.def))
+	}
+}
+
 func TestBuilderField(t *testing.T) {
 	tests := []struct {
 		name  string
@@ -300,4 +320,15 @@ func TestEdge(t *testing.T) {
 	require.Equal(t, "UsersInverseLabel", users.InverseLabelConstant())
 	require.Equal(t, "user_groups", users.Label())
 	require.Equal(t, "user_groups", groups.Label())
+}
+
+func TestValidSchemaName(t *testing.T) {
+	err := ValidSchemaName("Config")
+	require.Error(t, err)
+	err = ValidSchemaName("Mutation")
+	require.Error(t, err)
+	err = ValidSchemaName("Boring")
+	require.NoError(t, err)
+	err = ValidSchemaName("Order")
+	require.NoError(t, err)
 }

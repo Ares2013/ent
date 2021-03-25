@@ -10,10 +10,10 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/facebook/ent/dialect/sql/sqlgraph"
-	"github.com/facebook/ent/entc/integration/customid/ent/group"
-	"github.com/facebook/ent/entc/integration/customid/ent/user"
-	"github.com/facebook/ent/schema/field"
+	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/entc/integration/customid/ent/group"
+	"entgo.io/ent/entc/integration/customid/ent/user"
+	"entgo.io/ent/schema/field"
 )
 
 // GroupCreate is the builder for creating a Group entity.
@@ -23,19 +23,19 @@ type GroupCreate struct {
 	hooks    []Hook
 }
 
-// SetID sets the id field.
+// SetID sets the "id" field.
 func (gc *GroupCreate) SetID(i int) *GroupCreate {
 	gc.mutation.SetID(i)
 	return gc
 }
 
-// AddUserIDs adds the users edge to User by ids.
+// AddUserIDs adds the "users" edge to the User entity by IDs.
 func (gc *GroupCreate) AddUserIDs(ids ...int) *GroupCreate {
 	gc.mutation.AddUserIDs(ids...)
 	return gc
 }
 
-// AddUsers adds the users edges to User.
+// AddUsers adds the "users" edges to the User entity.
 func (gc *GroupCreate) AddUsers(u ...*User) *GroupCreate {
 	ids := make([]int, len(u))
 	for i := range u {
@@ -51,20 +51,23 @@ func (gc *GroupCreate) Mutation() *GroupMutation {
 
 // Save creates the Group in the database.
 func (gc *GroupCreate) Save(ctx context.Context) (*Group, error) {
-	if err := gc.preSave(); err != nil {
-		return nil, err
-	}
 	var (
 		err  error
 		node *Group
 	)
 	if len(gc.hooks) == 0 {
+		if err = gc.check(); err != nil {
+			return nil, err
+		}
 		node, err = gc.sqlSave(ctx)
 	} else {
 		var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 			mutation, ok := m.(*GroupMutation)
 			if !ok {
 				return nil, fmt.Errorf("unexpected mutation type %T", m)
+			}
+			if err = gc.check(); err != nil {
+				return nil, err
 			}
 			gc.mutation = mutation
 			node, err = gc.sqlSave(ctx)
@@ -90,28 +93,29 @@ func (gc *GroupCreate) SaveX(ctx context.Context) *Group {
 	return v
 }
 
-func (gc *GroupCreate) preSave() error {
+// check runs all checks and user-defined validators on the builder.
+func (gc *GroupCreate) check() error {
 	return nil
 }
 
 func (gc *GroupCreate) sqlSave(ctx context.Context) (*Group, error) {
-	gr, _spec := gc.createSpec()
+	_node, _spec := gc.createSpec()
 	if err := sqlgraph.CreateNode(ctx, gc.driver, _spec); err != nil {
 		if cerr, ok := isSQLConstraintError(err); ok {
 			err = cerr
 		}
 		return nil, err
 	}
-	if gr.ID == 0 {
+	if _node.ID == 0 {
 		id := _spec.ID.Value.(int64)
-		gr.ID = int(id)
+		_node.ID = int(id)
 	}
-	return gr, nil
+	return _node, nil
 }
 
 func (gc *GroupCreate) createSpec() (*Group, *sqlgraph.CreateSpec) {
 	var (
-		gr    = &Group{config: gc.config}
+		_node = &Group{config: gc.config}
 		_spec = &sqlgraph.CreateSpec{
 			Table: group.Table,
 			ID: &sqlgraph.FieldSpec{
@@ -121,7 +125,7 @@ func (gc *GroupCreate) createSpec() (*Group, *sqlgraph.CreateSpec) {
 		}
 	)
 	if id, ok := gc.mutation.ID(); ok {
-		gr.ID = id
+		_node.ID = id
 		_spec.ID.Value = id
 	}
 	if nodes := gc.mutation.UsersIDs(); len(nodes) > 0 {
@@ -143,10 +147,10 @@ func (gc *GroupCreate) createSpec() (*Group, *sqlgraph.CreateSpec) {
 		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	return gr, _spec
+	return _node, _spec
 }
 
-// GroupCreateBulk is the builder for creating a bulk of Group entities.
+// GroupCreateBulk is the builder for creating many Group entities in bulk.
 type GroupCreateBulk struct {
 	config
 	builders []*GroupCreate
@@ -161,12 +165,12 @@ func (gcb *GroupCreateBulk) Save(ctx context.Context) ([]*Group, error) {
 		func(i int, root context.Context) {
 			builder := gcb.builders[i]
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
-				if err := builder.preSave(); err != nil {
-					return nil, err
-				}
 				mutation, ok := m.(*GroupMutation)
 				if !ok {
 					return nil, fmt.Errorf("unexpected mutation type %T", m)
+				}
+				if err := builder.check(); err != nil {
+					return nil, err
 				}
 				builder.mutation = mutation
 				nodes[i], specs[i] = builder.createSpec()
@@ -205,7 +209,7 @@ func (gcb *GroupCreateBulk) Save(ctx context.Context) ([]*Group, error) {
 	return nodes, nil
 }
 
-// SaveX calls Save and panics if Save returns an error.
+// SaveX is like Save, but panics if an error occurs.
 func (gcb *GroupCreateBulk) SaveX(ctx context.Context) []*Group {
 	v, err := gcb.Save(ctx)
 	if err != nil {

@@ -12,10 +12,10 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/facebook/ent/dialect"
-	"github.com/facebook/ent/entc/integration/customid/ent"
-	"github.com/facebook/ent/entc/integration/customid/ent/pet"
-	"github.com/facebook/ent/entc/integration/customid/ent/user"
+	"entgo.io/ent/dialect"
+	"entgo.io/ent/entc/integration/customid/ent"
+	"entgo.io/ent/entc/integration/customid/ent/pet"
+	"entgo.io/ent/entc/integration/customid/ent/user"
 	"github.com/go-sql-driver/mysql"
 
 	"github.com/google/uuid"
@@ -50,7 +50,7 @@ func TestMySQL(t *testing.T) {
 }
 
 func TestPostgres(t *testing.T) {
-	for version, port := range map[string]int{"10": 5430, "11": 5431, "12": 5433} {
+	for version, port := range map[string]int{"10": 5430, "11": 5431, "12": 5433, "13": 5434} {
 		t.Run(version, func(t *testing.T) {
 			dsn := fmt.Sprintf("host=localhost port=%d user=postgres password=pass sslmode=disable", port)
 			db, err := sql.Open(dialect.Postgres, dsn)
@@ -101,6 +101,7 @@ func CustomID(t *testing.T, client *ent.Client) {
 	require.Equal(t, 2, lnk.QueryLinks().CountX(ctx))
 	require.Equal(t, lnk.ID, chd.QueryLinks().OnlyX(ctx).ID)
 	require.Equal(t, lnk.ID, blb.QueryLinks().OnlyX(ctx).ID)
+	require.Len(t, client.Blob.Query().IDsX(ctx), 3)
 
 	pedro := client.Pet.Create().SetID("pedro").SetOwner(a8m).SaveX(ctx)
 	require.Equal(t, a8m.ID, pedro.QueryOwner().OnlyIDX(ctx))
@@ -131,4 +132,23 @@ func CustomID(t *testing.T, client *ent.Client) {
 	require.Equal(t, "Chevrolet Camaro", bee.Model)
 	require.NotNil(t, bee.Edges.Owner)
 	require.Equal(t, pedro.ID, bee.Edges.Owner.ID)
+
+	pets = client.Pet.CreateBulk(
+		client.Pet.Create().SetID("luna").SetOwner(a8m).AddFriends(xabi),
+		client.Pet.Create().SetID("layla").SetOwner(a8m).AddFriendIDs(pedro.ID),
+		client.Pet.Create().AddFriends(pedro, xabi),
+	).SaveX(ctx)
+	require.Equal(t, "luna", pets[0].ID)
+	require.Equal(t, xabi.ID, pets[0].QueryFriends().OnlyIDX(ctx))
+	require.Equal(t, "layla", pets[1].ID)
+	require.Equal(t, pedro.ID, pets[1].QueryFriends().OnlyIDX(ctx))
+	require.Equal(t, []string{"pedro", "xabi"}, pets[2].QueryFriends().Order(ent.Asc(pet.FieldID)).IDsX(ctx))
+
+	u1, u2 := uuid.New(), uuid.New()
+	blobs := client.Blob.CreateBulk(
+		client.Blob.Create().SetID(u1),
+		client.Blob.Create().SetID(u2),
+	).SaveX(ctx)
+	require.Equal(t, u1, blobs[0].ID)
+	require.Equal(t, u2, blobs[1].ID)
 }

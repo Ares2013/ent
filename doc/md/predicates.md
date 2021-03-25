@@ -18,6 +18,11 @@ title: Predicates
   - IN, NOT IN
   - Contains, HasPrefix, HasSuffix
   - ContainsFold, EqualFold (**SQL** specific)
+- **JSON**
+  - =, !=
+  - =, !=, >, <, >=, <= on nested values (JSON path).
+  - Contains on nested values (JSON path).
+  - HasKey, Len&lt;P>
 - **Optional** fields:
   - IsNil, NotNil
 
@@ -88,6 +93,13 @@ pets := client.Pet.
 	Query().
 	Where(predicate.Pet(func(s *sql.Selector) {
 		s.Where(sql.InInts(pet.OwnerColumn, 1, 2, 3))
+	})).
+	AllX(ctx)
+
+users := client.User.
+	Query().
+	Where(predicate.User(func(s *sql.Selector) {
+		s.Where(sqljson.HasKey(user.FieldURL, sqljson.Path("Scheme")))
 	})).
 	AllX(ctx)
 ```

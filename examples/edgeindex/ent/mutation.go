@@ -11,10 +11,11 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/facebook/ent/examples/edgeindex/ent/city"
-	"github.com/facebook/ent/examples/edgeindex/ent/street"
+	"entgo.io/ent/examples/edgeindex/ent/city"
+	"entgo.io/ent/examples/edgeindex/ent/predicate"
+	"entgo.io/ent/examples/edgeindex/ent/street"
 
-	"github.com/facebook/ent"
+	"entgo.io/ent"
 )
 
 const (
@@ -30,8 +31,7 @@ const (
 	TypeStreet = "Street"
 )
 
-// CityMutation represents an operation that mutate the Cities
-// nodes in the graph.
+// CityMutation represents an operation that mutates the City nodes in the graph.
 type CityMutation struct {
 	config
 	op             Op
@@ -41,16 +41,18 @@ type CityMutation struct {
 	clearedFields  map[string]struct{}
 	streets        map[int]struct{}
 	removedstreets map[int]struct{}
+	clearedstreets bool
 	done           bool
 	oldValue       func(context.Context) (*City, error)
+	predicates     []predicate.City
 }
 
 var _ ent.Mutation = (*CityMutation)(nil)
 
-// cityOption allows to manage the mutation configuration using functional options.
+// cityOption allows management of the mutation configuration using functional options.
 type cityOption func(*CityMutation)
 
-// newCityMutation creates new mutation for $n.Name.
+// newCityMutation creates new mutation for the City entity.
 func newCityMutation(c config, op Op, opts ...cityOption) *CityMutation {
 	m := &CityMutation{
 		config:        c,
@@ -64,7 +66,7 @@ func newCityMutation(c config, op Op, opts ...cityOption) *CityMutation {
 	return m
 }
 
-// withCityID sets the id field of the mutation.
+// withCityID sets the ID field of the mutation.
 func withCityID(id int) cityOption {
 	return func(m *CityMutation) {
 		var (
@@ -115,8 +117,8 @@ func (m CityMutation) Tx() (*Tx, error) {
 	return tx, nil
 }
 
-// ID returns the id value in the mutation. Note that, the id
-// is available only if it was provided to the builder.
+// ID returns the ID value in the mutation. Note that the ID
+// is only available if it was provided to the builder.
 func (m *CityMutation) ID() (id int, exists bool) {
 	if m.id == nil {
 		return
@@ -124,12 +126,12 @@ func (m *CityMutation) ID() (id int, exists bool) {
 	return *m.id, true
 }
 
-// SetName sets the name field.
+// SetName sets the "name" field.
 func (m *CityMutation) SetName(s string) {
 	m.name = &s
 }
 
-// Name returns the name value in the mutation.
+// Name returns the value of the "name" field in the mutation.
 func (m *CityMutation) Name() (r string, exists bool) {
 	v := m.name
 	if v == nil {
@@ -138,13 +140,12 @@ func (m *CityMutation) Name() (r string, exists bool) {
 	return *v, true
 }
 
-// OldName returns the old name value of the City.
-// If the City object wasn't provided to the builder, the object is fetched
-// from the database.
-// An error is returned if the mutation operation is not UpdateOne, or database query fails.
+// OldName returns the old "name" field's value of the City entity.
+// If the City object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
 func (m *CityMutation) OldName(ctx context.Context) (v string, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, fmt.Errorf("OldName is allowed only on UpdateOne operations")
+		return v, fmt.Errorf("OldName is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
 		return v, fmt.Errorf("OldName requires an ID field in the mutation")
@@ -156,12 +157,12 @@ func (m *CityMutation) OldName(ctx context.Context) (v string, err error) {
 	return oldValue.Name, nil
 }
 
-// ResetName reset all changes of the "name" field.
+// ResetName resets all changes to the "name" field.
 func (m *CityMutation) ResetName() {
 	m.name = nil
 }
 
-// AddStreetIDs adds the streets edge to Street by ids.
+// AddStreetIDs adds the "streets" edge to the Street entity by ids.
 func (m *CityMutation) AddStreetIDs(ids ...int) {
 	if m.streets == nil {
 		m.streets = make(map[int]struct{})
@@ -171,7 +172,17 @@ func (m *CityMutation) AddStreetIDs(ids ...int) {
 	}
 }
 
-// RemoveStreetIDs removes the streets edge to Street by ids.
+// ClearStreets clears the "streets" edge to the Street entity.
+func (m *CityMutation) ClearStreets() {
+	m.clearedstreets = true
+}
+
+// StreetsCleared returns if the "streets" edge to the Street entity was cleared.
+func (m *CityMutation) StreetsCleared() bool {
+	return m.clearedstreets
+}
+
+// RemoveStreetIDs removes the "streets" edge to the Street entity by IDs.
 func (m *CityMutation) RemoveStreetIDs(ids ...int) {
 	if m.removedstreets == nil {
 		m.removedstreets = make(map[int]struct{})
@@ -181,7 +192,7 @@ func (m *CityMutation) RemoveStreetIDs(ids ...int) {
 	}
 }
 
-// RemovedStreets returns the removed ids of streets.
+// RemovedStreets returns the removed IDs of the "streets" edge to the Street entity.
 func (m *CityMutation) RemovedStreetsIDs() (ids []int) {
 	for id := range m.removedstreets {
 		ids = append(ids, id)
@@ -189,7 +200,7 @@ func (m *CityMutation) RemovedStreetsIDs() (ids []int) {
 	return
 }
 
-// StreetsIDs returns the streets ids in the mutation.
+// StreetsIDs returns the "streets" edge IDs in the mutation.
 func (m *CityMutation) StreetsIDs() (ids []int) {
 	for id := range m.streets {
 		ids = append(ids, id)
@@ -197,9 +208,10 @@ func (m *CityMutation) StreetsIDs() (ids []int) {
 	return
 }
 
-// ResetStreets reset all changes of the "streets" edge.
+// ResetStreets resets all changes to the "streets" edge.
 func (m *CityMutation) ResetStreets() {
 	m.streets = nil
+	m.clearedstreets = false
 	m.removedstreets = nil
 }
 
@@ -213,9 +225,9 @@ func (m *CityMutation) Type() string {
 	return m.typ
 }
 
-// Fields returns all fields that were changed during
-// this mutation. Note that, in order to get all numeric
-// fields that were in/decremented, call AddedFields().
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
 func (m *CityMutation) Fields() []string {
 	fields := make([]string, 0, 1)
 	if m.name != nil {
@@ -224,9 +236,9 @@ func (m *CityMutation) Fields() []string {
 	return fields
 }
 
-// Field returns the value of a field with the given name.
-// The second boolean value indicates that this field was
-// not set, or was not define in the schema.
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
 func (m *CityMutation) Field(name string) (ent.Value, bool) {
 	switch name {
 	case city.FieldName:
@@ -235,9 +247,9 @@ func (m *CityMutation) Field(name string) (ent.Value, bool) {
 	return nil, false
 }
 
-// OldField returns the old value of the field from the database.
-// An error is returned if the mutation operation is not UpdateOne,
-// or the query to the database was failed.
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
 func (m *CityMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
 	switch name {
 	case city.FieldName:
@@ -246,9 +258,9 @@ func (m *CityMutation) OldField(ctx context.Context, name string) (ent.Value, er
 	return nil, fmt.Errorf("unknown City field %s", name)
 }
 
-// SetField sets the value for the given name. It returns an
-// error if the field is not defined in the schema, or if the
-// type mismatch the field type.
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
 func (m *CityMutation) SetField(name string, value ent.Value) error {
 	switch name {
 	case city.FieldName:
@@ -262,50 +274,49 @@ func (m *CityMutation) SetField(name string, value ent.Value) error {
 	return fmt.Errorf("unknown City field %s", name)
 }
 
-// AddedFields returns all numeric fields that were incremented
-// or decremented during this mutation.
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
 func (m *CityMutation) AddedFields() []string {
 	return nil
 }
 
-// AddedField returns the numeric value that was in/decremented
-// from a field with the given name. The second value indicates
-// that this field was not set, or was not define in the schema.
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
 func (m *CityMutation) AddedField(name string) (ent.Value, bool) {
 	return nil, false
 }
 
-// AddField adds the value for the given name. It returns an
-// error if the field is not defined in the schema, or if the
-// type mismatch the field type.
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
 func (m *CityMutation) AddField(name string, value ent.Value) error {
 	switch name {
 	}
 	return fmt.Errorf("unknown City numeric field %s", name)
 }
 
-// ClearedFields returns all nullable fields that were cleared
-// during this mutation.
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
 func (m *CityMutation) ClearedFields() []string {
 	return nil
 }
 
-// FieldCleared returns a boolean indicates if this field was
+// FieldCleared returns a boolean indicating if a field with the given name was
 // cleared in this mutation.
 func (m *CityMutation) FieldCleared(name string) bool {
 	_, ok := m.clearedFields[name]
 	return ok
 }
 
-// ClearField clears the value for the given name. It returns an
+// ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *CityMutation) ClearField(name string) error {
 	return fmt.Errorf("unknown City nullable field %s", name)
 }
 
-// ResetField resets all changes in the mutation regarding the
-// given field name. It returns an error if the field is not
-// defined in the schema.
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
 func (m *CityMutation) ResetField(name string) error {
 	switch name {
 	case city.FieldName:
@@ -315,8 +326,7 @@ func (m *CityMutation) ResetField(name string) error {
 	return fmt.Errorf("unknown City field %s", name)
 }
 
-// AddedEdges returns all edge names that were set/added in this
-// mutation.
+// AddedEdges returns all edge names that were set/added in this mutation.
 func (m *CityMutation) AddedEdges() []string {
 	edges := make([]string, 0, 1)
 	if m.streets != nil {
@@ -325,8 +335,8 @@ func (m *CityMutation) AddedEdges() []string {
 	return edges
 }
 
-// AddedIDs returns all ids (to other nodes) that were added for
-// the given edge name.
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
 func (m *CityMutation) AddedIDs(name string) []ent.Value {
 	switch name {
 	case city.EdgeStreets:
@@ -339,8 +349,7 @@ func (m *CityMutation) AddedIDs(name string) []ent.Value {
 	return nil
 }
 
-// RemovedEdges returns all edge names that were removed in this
-// mutation.
+// RemovedEdges returns all edge names that were removed in this mutation.
 func (m *CityMutation) RemovedEdges() []string {
 	edges := make([]string, 0, 1)
 	if m.removedstreets != nil {
@@ -349,8 +358,8 @@ func (m *CityMutation) RemovedEdges() []string {
 	return edges
 }
 
-// RemovedIDs returns all ids (to other nodes) that were removed for
-// the given edge name.
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
 func (m *CityMutation) RemovedIDs(name string) []ent.Value {
 	switch name {
 	case city.EdgeStreets:
@@ -363,32 +372,35 @@ func (m *CityMutation) RemovedIDs(name string) []ent.Value {
 	return nil
 }
 
-// ClearedEdges returns all edge names that were cleared in this
-// mutation.
+// ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *CityMutation) ClearedEdges() []string {
 	edges := make([]string, 0, 1)
+	if m.clearedstreets {
+		edges = append(edges, city.EdgeStreets)
+	}
 	return edges
 }
 
-// EdgeCleared returns a boolean indicates if this edge was
-// cleared in this mutation.
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
 func (m *CityMutation) EdgeCleared(name string) bool {
 	switch name {
+	case city.EdgeStreets:
+		return m.clearedstreets
 	}
 	return false
 }
 
-// ClearEdge clears the value for the given name. It returns an
-// error if the edge name is not defined in the schema.
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
 func (m *CityMutation) ClearEdge(name string) error {
 	switch name {
 	}
 	return fmt.Errorf("unknown City unique edge %s", name)
 }
 
-// ResetEdge resets all changes in the mutation regarding the
-// given edge name. It returns an error if the edge is not
-// defined in the schema.
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
 func (m *CityMutation) ResetEdge(name string) error {
 	switch name {
 	case city.EdgeStreets:
@@ -398,8 +410,7 @@ func (m *CityMutation) ResetEdge(name string) error {
 	return fmt.Errorf("unknown City edge %s", name)
 }
 
-// StreetMutation represents an operation that mutate the Streets
-// nodes in the graph.
+// StreetMutation represents an operation that mutates the Street nodes in the graph.
 type StreetMutation struct {
 	config
 	op            Op
@@ -411,14 +422,15 @@ type StreetMutation struct {
 	clearedcity   bool
 	done          bool
 	oldValue      func(context.Context) (*Street, error)
+	predicates    []predicate.Street
 }
 
 var _ ent.Mutation = (*StreetMutation)(nil)
 
-// streetOption allows to manage the mutation configuration using functional options.
+// streetOption allows management of the mutation configuration using functional options.
 type streetOption func(*StreetMutation)
 
-// newStreetMutation creates new mutation for $n.Name.
+// newStreetMutation creates new mutation for the Street entity.
 func newStreetMutation(c config, op Op, opts ...streetOption) *StreetMutation {
 	m := &StreetMutation{
 		config:        c,
@@ -432,7 +444,7 @@ func newStreetMutation(c config, op Op, opts ...streetOption) *StreetMutation {
 	return m
 }
 
-// withStreetID sets the id field of the mutation.
+// withStreetID sets the ID field of the mutation.
 func withStreetID(id int) streetOption {
 	return func(m *StreetMutation) {
 		var (
@@ -483,8 +495,8 @@ func (m StreetMutation) Tx() (*Tx, error) {
 	return tx, nil
 }
 
-// ID returns the id value in the mutation. Note that, the id
-// is available only if it was provided to the builder.
+// ID returns the ID value in the mutation. Note that the ID
+// is only available if it was provided to the builder.
 func (m *StreetMutation) ID() (id int, exists bool) {
 	if m.id == nil {
 		return
@@ -492,12 +504,12 @@ func (m *StreetMutation) ID() (id int, exists bool) {
 	return *m.id, true
 }
 
-// SetName sets the name field.
+// SetName sets the "name" field.
 func (m *StreetMutation) SetName(s string) {
 	m.name = &s
 }
 
-// Name returns the name value in the mutation.
+// Name returns the value of the "name" field in the mutation.
 func (m *StreetMutation) Name() (r string, exists bool) {
 	v := m.name
 	if v == nil {
@@ -506,13 +518,12 @@ func (m *StreetMutation) Name() (r string, exists bool) {
 	return *v, true
 }
 
-// OldName returns the old name value of the Street.
-// If the Street object wasn't provided to the builder, the object is fetched
-// from the database.
-// An error is returned if the mutation operation is not UpdateOne, or database query fails.
+// OldName returns the old "name" field's value of the Street entity.
+// If the Street object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
 func (m *StreetMutation) OldName(ctx context.Context) (v string, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, fmt.Errorf("OldName is allowed only on UpdateOne operations")
+		return v, fmt.Errorf("OldName is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
 		return v, fmt.Errorf("OldName requires an ID field in the mutation")
@@ -524,27 +535,27 @@ func (m *StreetMutation) OldName(ctx context.Context) (v string, err error) {
 	return oldValue.Name, nil
 }
 
-// ResetName reset all changes of the "name" field.
+// ResetName resets all changes to the "name" field.
 func (m *StreetMutation) ResetName() {
 	m.name = nil
 }
 
-// SetCityID sets the city edge to City by id.
+// SetCityID sets the "city" edge to the City entity by id.
 func (m *StreetMutation) SetCityID(id int) {
 	m.city = &id
 }
 
-// ClearCity clears the city edge to City.
+// ClearCity clears the "city" edge to the City entity.
 func (m *StreetMutation) ClearCity() {
 	m.clearedcity = true
 }
 
-// CityCleared returns if the edge city was cleared.
+// CityCleared returns if the "city" edge to the City entity was cleared.
 func (m *StreetMutation) CityCleared() bool {
 	return m.clearedcity
 }
 
-// CityID returns the city id in the mutation.
+// CityID returns the "city" edge ID in the mutation.
 func (m *StreetMutation) CityID() (id int, exists bool) {
 	if m.city != nil {
 		return *m.city, true
@@ -552,8 +563,8 @@ func (m *StreetMutation) CityID() (id int, exists bool) {
 	return
 }
 
-// CityIDs returns the city ids in the mutation.
-// Note that ids always returns len(ids) <= 1 for unique edges, and you should use
+// CityIDs returns the "city" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
 // CityID instead. It exists only for internal usage by the builders.
 func (m *StreetMutation) CityIDs() (ids []int) {
 	if id := m.city; id != nil {
@@ -562,7 +573,7 @@ func (m *StreetMutation) CityIDs() (ids []int) {
 	return
 }
 
-// ResetCity reset all changes of the "city" edge.
+// ResetCity resets all changes to the "city" edge.
 func (m *StreetMutation) ResetCity() {
 	m.city = nil
 	m.clearedcity = false
@@ -578,9 +589,9 @@ func (m *StreetMutation) Type() string {
 	return m.typ
 }
 
-// Fields returns all fields that were changed during
-// this mutation. Note that, in order to get all numeric
-// fields that were in/decremented, call AddedFields().
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
 func (m *StreetMutation) Fields() []string {
 	fields := make([]string, 0, 1)
 	if m.name != nil {
@@ -589,9 +600,9 @@ func (m *StreetMutation) Fields() []string {
 	return fields
 }
 
-// Field returns the value of a field with the given name.
-// The second boolean value indicates that this field was
-// not set, or was not define in the schema.
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
 func (m *StreetMutation) Field(name string) (ent.Value, bool) {
 	switch name {
 	case street.FieldName:
@@ -600,9 +611,9 @@ func (m *StreetMutation) Field(name string) (ent.Value, bool) {
 	return nil, false
 }
 
-// OldField returns the old value of the field from the database.
-// An error is returned if the mutation operation is not UpdateOne,
-// or the query to the database was failed.
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
 func (m *StreetMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
 	switch name {
 	case street.FieldName:
@@ -611,9 +622,9 @@ func (m *StreetMutation) OldField(ctx context.Context, name string) (ent.Value, 
 	return nil, fmt.Errorf("unknown Street field %s", name)
 }
 
-// SetField sets the value for the given name. It returns an
-// error if the field is not defined in the schema, or if the
-// type mismatch the field type.
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
 func (m *StreetMutation) SetField(name string, value ent.Value) error {
 	switch name {
 	case street.FieldName:
@@ -627,50 +638,49 @@ func (m *StreetMutation) SetField(name string, value ent.Value) error {
 	return fmt.Errorf("unknown Street field %s", name)
 }
 
-// AddedFields returns all numeric fields that were incremented
-// or decremented during this mutation.
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
 func (m *StreetMutation) AddedFields() []string {
 	return nil
 }
 
-// AddedField returns the numeric value that was in/decremented
-// from a field with the given name. The second value indicates
-// that this field was not set, or was not define in the schema.
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
 func (m *StreetMutation) AddedField(name string) (ent.Value, bool) {
 	return nil, false
 }
 
-// AddField adds the value for the given name. It returns an
-// error if the field is not defined in the schema, or if the
-// type mismatch the field type.
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
 func (m *StreetMutation) AddField(name string, value ent.Value) error {
 	switch name {
 	}
 	return fmt.Errorf("unknown Street numeric field %s", name)
 }
 
-// ClearedFields returns all nullable fields that were cleared
-// during this mutation.
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
 func (m *StreetMutation) ClearedFields() []string {
 	return nil
 }
 
-// FieldCleared returns a boolean indicates if this field was
+// FieldCleared returns a boolean indicating if a field with the given name was
 // cleared in this mutation.
 func (m *StreetMutation) FieldCleared(name string) bool {
 	_, ok := m.clearedFields[name]
 	return ok
 }
 
-// ClearField clears the value for the given name. It returns an
+// ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *StreetMutation) ClearField(name string) error {
 	return fmt.Errorf("unknown Street nullable field %s", name)
 }
 
-// ResetField resets all changes in the mutation regarding the
-// given field name. It returns an error if the field is not
-// defined in the schema.
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
 func (m *StreetMutation) ResetField(name string) error {
 	switch name {
 	case street.FieldName:
@@ -680,8 +690,7 @@ func (m *StreetMutation) ResetField(name string) error {
 	return fmt.Errorf("unknown Street field %s", name)
 }
 
-// AddedEdges returns all edge names that were set/added in this
-// mutation.
+// AddedEdges returns all edge names that were set/added in this mutation.
 func (m *StreetMutation) AddedEdges() []string {
 	edges := make([]string, 0, 1)
 	if m.city != nil {
@@ -690,8 +699,8 @@ func (m *StreetMutation) AddedEdges() []string {
 	return edges
 }
 
-// AddedIDs returns all ids (to other nodes) that were added for
-// the given edge name.
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
 func (m *StreetMutation) AddedIDs(name string) []ent.Value {
 	switch name {
 	case street.EdgeCity:
@@ -702,23 +711,21 @@ func (m *StreetMutation) AddedIDs(name string) []ent.Value {
 	return nil
 }
 
-// RemovedEdges returns all edge names that were removed in this
-// mutation.
+// RemovedEdges returns all edge names that were removed in this mutation.
 func (m *StreetMutation) RemovedEdges() []string {
 	edges := make([]string, 0, 1)
 	return edges
 }
 
-// RemovedIDs returns all ids (to other nodes) that were removed for
-// the given edge name.
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
 func (m *StreetMutation) RemovedIDs(name string) []ent.Value {
 	switch name {
 	}
 	return nil
 }
 
-// ClearedEdges returns all edge names that were cleared in this
-// mutation.
+// ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *StreetMutation) ClearedEdges() []string {
 	edges := make([]string, 0, 1)
 	if m.clearedcity {
@@ -727,8 +734,8 @@ func (m *StreetMutation) ClearedEdges() []string {
 	return edges
 }
 
-// EdgeCleared returns a boolean indicates if this edge was
-// cleared in this mutation.
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
 func (m *StreetMutation) EdgeCleared(name string) bool {
 	switch name {
 	case street.EdgeCity:
@@ -737,8 +744,8 @@ func (m *StreetMutation) EdgeCleared(name string) bool {
 	return false
 }
 
-// ClearEdge clears the value for the given name. It returns an
-// error if the edge name is not defined in the schema.
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
 func (m *StreetMutation) ClearEdge(name string) error {
 	switch name {
 	case street.EdgeCity:
@@ -748,9 +755,8 @@ func (m *StreetMutation) ClearEdge(name string) error {
 	return fmt.Errorf("unknown Street unique edge %s", name)
 }
 
-// ResetEdge resets all changes in the mutation regarding the
-// given edge name. It returns an error if the edge is not
-// defined in the schema.
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
 func (m *StreetMutation) ResetEdge(name string) error {
 	switch name {
 	case street.EdgeCity:

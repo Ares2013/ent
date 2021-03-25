@@ -13,11 +13,11 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/facebook/ent/dialect/sql"
-	"github.com/facebook/ent/dialect/sql/sqlgraph"
-	"github.com/facebook/ent/examples/o2mrecur/ent/node"
-	"github.com/facebook/ent/examples/o2mrecur/ent/predicate"
-	"github.com/facebook/ent/schema/field"
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/examples/o2mrecur/ent/node"
+	"entgo.io/ent/examples/o2mrecur/ent/predicate"
+	"entgo.io/ent/schema/field"
 )
 
 // NodeQuery is the builder for querying Node entities.
@@ -25,8 +25,9 @@ type NodeQuery struct {
 	config
 	limit      *int
 	offset     *int
+	unique     *bool
 	order      []OrderFunc
-	unique     []string
+	fields     []string
 	predicates []predicate.Node
 	// eager-loading edges.
 	withParent   *NodeQuery
@@ -37,7 +38,7 @@ type NodeQuery struct {
 	path func(context.Context) (*sql.Selector, error)
 }
 
-// Where adds a new predicate for the builder.
+// Where adds a new predicate for the NodeQuery builder.
 func (nq *NodeQuery) Where(ps ...predicate.Node) *NodeQuery {
 	nq.predicates = append(nq.predicates, ps...)
 	return nq
@@ -55,21 +56,32 @@ func (nq *NodeQuery) Offset(offset int) *NodeQuery {
 	return nq
 }
 
+// Unique configures the query builder to filter duplicate records on query.
+// By default, unique is set to true, and can be disabled using this method.
+func (nq *NodeQuery) Unique(unique bool) *NodeQuery {
+	nq.unique = &unique
+	return nq
+}
+
 // Order adds an order step to the query.
 func (nq *NodeQuery) Order(o ...OrderFunc) *NodeQuery {
 	nq.order = append(nq.order, o...)
 	return nq
 }
 
-// QueryParent chains the current query on the parent edge.
+// QueryParent chains the current query on the "parent" edge.
 func (nq *NodeQuery) QueryParent() *NodeQuery {
 	query := &NodeQuery{config: nq.config}
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := nq.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
+		selector := nq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
 		step := sqlgraph.NewStep(
-			sqlgraph.From(node.Table, node.FieldID, nq.sqlQuery()),
+			sqlgraph.From(node.Table, node.FieldID, selector),
 			sqlgraph.To(node.Table, node.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, node.ParentTable, node.ParentColumn),
 		)
@@ -79,15 +91,19 @@ func (nq *NodeQuery) QueryParent() *NodeQuery {
 	return query
 }
 
-// QueryChildren chains the current query on the children edge.
+// QueryChildren chains the current query on the "children" edge.
 func (nq *NodeQuery) QueryChildren() *NodeQuery {
 	query := &NodeQuery{config: nq.config}
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := nq.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
+		selector := nq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
 		step := sqlgraph.NewStep(
-			sqlgraph.From(node.Table, node.FieldID, nq.sqlQuery()),
+			sqlgraph.From(node.Table, node.FieldID, selector),
 			sqlgraph.To(node.Table, node.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, node.ChildrenTable, node.ChildrenColumn),
 		)
@@ -97,28 +113,30 @@ func (nq *NodeQuery) QueryChildren() *NodeQuery {
 	return query
 }
 
-// First returns the first Node entity in the query. Returns *NotFoundError when no node was found.
+// First returns the first Node entity from the query.
+// Returns a *NotFoundError when no Node was found.
 func (nq *NodeQuery) First(ctx context.Context) (*Node, error) {
-	ns, err := nq.Limit(1).All(ctx)
+	nodes, err := nq.Limit(1).All(ctx)
 	if err != nil {
 		return nil, err
 	}
-	if len(ns) == 0 {
+	if len(nodes) == 0 {
 		return nil, &NotFoundError{node.Label}
 	}
-	return ns[0], nil
+	return nodes[0], nil
 }
 
 // FirstX is like First, but panics if an error occurs.
 func (nq *NodeQuery) FirstX(ctx context.Context) *Node {
-	n, err := nq.First(ctx)
+	node, err := nq.First(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
 	}
-	return n
+	return node
 }
 
-// FirstID returns the first Node id in the query. Returns *NotFoundError when no id was found.
+// FirstID returns the first Node ID from the query.
+// Returns a *NotFoundError when no Node ID was found.
 func (nq *NodeQuery) FirstID(ctx context.Context) (id int, err error) {
 	var ids []int
 	if ids, err = nq.Limit(1).IDs(ctx); err != nil {
@@ -131,8 +149,8 @@ func (nq *NodeQuery) FirstID(ctx context.Context) (id int, err error) {
 	return ids[0], nil
 }
 
-// FirstXID is like FirstID, but panics if an error occurs.
-func (nq *NodeQuery) FirstXID(ctx context.Context) int {
+// FirstIDX is like FirstID, but panics if an error occurs.
+func (nq *NodeQuery) FirstIDX(ctx context.Context) int {
 	id, err := nq.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -140,15 +158,17 @@ func (nq *NodeQuery) FirstXID(ctx context.Context) int {
 	return id
 }
 
-// Only returns the only Node entity in the query, returns an error if not exactly one entity was returned.
+// Only returns a single Node entity found by the query, ensuring it only returns one.
+// Returns a *NotSingularError when exactly one Node entity is not found.
+// Returns a *NotFoundError when no Node entities are found.
 func (nq *NodeQuery) Only(ctx context.Context) (*Node, error) {
-	ns, err := nq.Limit(2).All(ctx)
+	nodes, err := nq.Limit(2).All(ctx)
 	if err != nil {
 		return nil, err
 	}
-	switch len(ns) {
+	switch len(nodes) {
 	case 1:
-		return ns[0], nil
+		return nodes[0], nil
 	case 0:
 		return nil, &NotFoundError{node.Label}
 	default:
@@ -158,14 +178,16 @@ func (nq *NodeQuery) Only(ctx context.Context) (*Node, error) {
 
 // OnlyX is like Only, but panics if an error occurs.
 func (nq *NodeQuery) OnlyX(ctx context.Context) *Node {
-	n, err := nq.Only(ctx)
+	node, err := nq.Only(ctx)
 	if err != nil {
 		panic(err)
 	}
-	return n
+	return node
 }
 
-// OnlyID returns the only Node id in the query, returns an error if not exactly one id was returned.
+// OnlyID is like Only, but returns the only Node ID in the query.
+// Returns a *NotSingularError when exactly one Node ID is not found.
+// Returns a *NotFoundError when no entities are found.
 func (nq *NodeQuery) OnlyID(ctx context.Context) (id int, err error) {
 	var ids []int
 	if ids, err = nq.Limit(2).IDs(ctx); err != nil {
@@ -201,14 +223,14 @@ func (nq *NodeQuery) All(ctx context.Context) ([]*Node, error) {
 
 // AllX is like All, but panics if an error occurs.
 func (nq *NodeQuery) AllX(ctx context.Context) []*Node {
-	ns, err := nq.All(ctx)
+	nodes, err := nq.All(ctx)
 	if err != nil {
 		panic(err)
 	}
-	return ns
+	return nodes
 }
 
-// IDs executes the query and returns a list of Node ids.
+// IDs executes the query and returns a list of Node IDs.
 func (nq *NodeQuery) IDs(ctx context.Context) ([]int, error) {
 	var ids []int
 	if err := nq.Select(node.FieldID).Scan(ctx, &ids); err != nil {
@@ -260,24 +282,28 @@ func (nq *NodeQuery) ExistX(ctx context.Context) bool {
 	return exist
 }
 
-// Clone returns a duplicate of the query builder, including all associated steps. It can be
+// Clone returns a duplicate of the NodeQuery builder, including all associated steps. It can be
 // used to prepare common query builders and use them differently after the clone is made.
 func (nq *NodeQuery) Clone() *NodeQuery {
+	if nq == nil {
+		return nil
+	}
 	return &NodeQuery{
-		config:     nq.config,
-		limit:      nq.limit,
-		offset:     nq.offset,
-		order:      append([]OrderFunc{}, nq.order...),
-		unique:     append([]string{}, nq.unique...),
-		predicates: append([]predicate.Node{}, nq.predicates...),
+		config:       nq.config,
+		limit:        nq.limit,
+		offset:       nq.offset,
+		order:        append([]OrderFunc{}, nq.order...),
+		predicates:   append([]predicate.Node{}, nq.predicates...),
+		withParent:   nq.withParent.Clone(),
+		withChildren: nq.withChildren.Clone(),
 		// clone intermediate query.
 		sql:  nq.sql.Clone(),
 		path: nq.path,
 	}
 }
 
-//  WithParent tells the query-builder to eager-loads the nodes that are connected to
-// the "parent" edge. The optional arguments used to configure the query builder of the edge.
+// WithParent tells the query-builder to eager-load the nodes that are connected to
+// the "parent" edge. The optional arguments are used to configure the query builder of the edge.
 func (nq *NodeQuery) WithParent(opts ...func(*NodeQuery)) *NodeQuery {
 	query := &NodeQuery{config: nq.config}
 	for _, opt := range opts {
@@ -287,8 +313,8 @@ func (nq *NodeQuery) WithParent(opts ...func(*NodeQuery)) *NodeQuery {
 	return nq
 }
 
-//  WithChildren tells the query-builder to eager-loads the nodes that are connected to
-// the "children" edge. The optional arguments used to configure the query builder of the edge.
+// WithChildren tells the query-builder to eager-load the nodes that are connected to
+// the "children" edge. The optional arguments are used to configure the query builder of the edge.
 func (nq *NodeQuery) WithChildren(opts ...func(*NodeQuery)) *NodeQuery {
 	query := &NodeQuery{config: nq.config}
 	for _, opt := range opts {
@@ -298,7 +324,7 @@ func (nq *NodeQuery) WithChildren(opts ...func(*NodeQuery)) *NodeQuery {
 	return nq
 }
 
-// GroupBy used to group vertices by one or more fields/columns.
+// GroupBy is used to group vertices by one or more fields/columns.
 // It is often used with aggregate functions, like: count, max, mean, min, sum.
 //
 // Example:
@@ -320,12 +346,13 @@ func (nq *NodeQuery) GroupBy(field string, fields ...string) *NodeGroupBy {
 		if err := nq.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		return nq.sqlQuery(), nil
+		return nq.sqlQuery(ctx), nil
 	}
 	return group
 }
 
-// Select one or more fields from the given query.
+// Select allows the selection one or more fields/columns for the given query,
+// instead of selecting all fields in the entity.
 //
 // Example:
 //
@@ -338,18 +365,16 @@ func (nq *NodeQuery) GroupBy(field string, fields ...string) *NodeGroupBy {
 //		Scan(ctx, &v)
 //
 func (nq *NodeQuery) Select(field string, fields ...string) *NodeSelect {
-	selector := &NodeSelect{config: nq.config}
-	selector.fields = append([]string{field}, fields...)
-	selector.path = func(ctx context.Context) (prev *sql.Selector, err error) {
-		if err := nq.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		return nq.sqlQuery(), nil
-	}
-	return selector
+	nq.fields = append([]string{field}, fields...)
+	return &NodeSelect{NodeQuery: nq}
 }
 
 func (nq *NodeQuery) prepareQuery(ctx context.Context) error {
+	for _, f := range nq.fields {
+		if !node.ValidColumn(f) {
+			return &ValidationError{Name: f, err: fmt.Errorf("ent: invalid field %q for query", f)}
+		}
+	}
 	if nq.path != nil {
 		prev, err := nq.path(ctx)
 		if err != nil {
@@ -376,22 +401,18 @@ func (nq *NodeQuery) sqlAll(ctx context.Context) ([]*Node, error) {
 	if withFKs {
 		_spec.Node.Columns = append(_spec.Node.Columns, node.ForeignKeys...)
 	}
-	_spec.ScanValues = func() []interface{} {
+	_spec.ScanValues = func(columns []string) ([]interface{}, error) {
 		node := &Node{config: nq.config}
 		nodes = append(nodes, node)
-		values := node.scanValues()
-		if withFKs {
-			values = append(values, node.fkValues()...)
-		}
-		return values
+		return node.scanValues(columns)
 	}
-	_spec.Assign = func(values ...interface{}) error {
+	_spec.Assign = func(columns []string, values []interface{}) error {
 		if len(nodes) == 0 {
 			return fmt.Errorf("ent: Assign called without calling ScanValues")
 		}
 		node := nodes[len(nodes)-1]
 		node.Edges.loadedTypes = loadedTypes
-		return node.assignValues(values...)
+		return node.assignValues(columns, values)
 	}
 	if err := sqlgraph.QueryNodes(ctx, nq.driver, _spec); err != nil {
 		return nil, err
@@ -404,10 +425,14 @@ func (nq *NodeQuery) sqlAll(ctx context.Context) ([]*Node, error) {
 		ids := make([]int, 0, len(nodes))
 		nodeids := make(map[int][]*Node)
 		for i := range nodes {
-			if fk := nodes[i].node_children; fk != nil {
-				ids = append(ids, *fk)
-				nodeids[*fk] = append(nodeids[*fk], nodes[i])
+			if nodes[i].node_children == nil {
+				continue
 			}
+			fk := *nodes[i].node_children
+			if _, ok := nodeids[fk]; !ok {
+				ids = append(ids, fk)
+			}
+			nodeids[fk] = append(nodeids[fk], nodes[i])
 		}
 		query.Where(node.IDIn(ids...))
 		neighbors, err := query.All(ctx)
@@ -431,6 +456,7 @@ func (nq *NodeQuery) sqlAll(ctx context.Context) ([]*Node, error) {
 		for i := range nodes {
 			fks = append(fks, nodes[i].ID)
 			nodeids[nodes[i].ID] = nodes[i]
+			nodes[i].Edges.Children = []*Node{}
 		}
 		query.withFKs = true
 		query.Where(predicate.Node(func(s *sql.Selector) {
@@ -464,7 +490,7 @@ func (nq *NodeQuery) sqlCount(ctx context.Context) (int, error) {
 func (nq *NodeQuery) sqlExist(ctx context.Context) (bool, error) {
 	n, err := nq.sqlCount(ctx)
 	if err != nil {
-		return false, fmt.Errorf("ent: check existence: %v", err)
+		return false, fmt.Errorf("ent: check existence: %w", err)
 	}
 	return n > 0, nil
 }
@@ -482,6 +508,18 @@ func (nq *NodeQuery) querySpec() *sqlgraph.QuerySpec {
 		From:   nq.sql,
 		Unique: true,
 	}
+	if unique := nq.unique; unique != nil {
+		_spec.Unique = *unique
+	}
+	if fields := nq.fields; len(fields) > 0 {
+		_spec.Node.Columns = make([]string, 0, len(fields))
+		_spec.Node.Columns = append(_spec.Node.Columns, node.FieldID)
+		for i := range fields {
+			if fields[i] != node.FieldID {
+				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
+			}
+		}
+	}
 	if ps := nq.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -498,14 +536,14 @@ func (nq *NodeQuery) querySpec() *sqlgraph.QuerySpec {
 	if ps := nq.order; len(ps) > 0 {
 		_spec.Order = func(selector *sql.Selector) {
 			for i := range ps {
-				ps[i](selector)
+				ps[i](selector, node.ValidColumn)
 			}
 		}
 	}
 	return _spec
 }
 
-func (nq *NodeQuery) sqlQuery() *sql.Selector {
+func (nq *NodeQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	builder := sql.Dialect(nq.driver.Dialect())
 	t1 := builder.Table(node.Table)
 	selector := builder.Select(t1.Columns(node.Columns...)...).From(t1)
@@ -517,7 +555,7 @@ func (nq *NodeQuery) sqlQuery() *sql.Selector {
 		p(selector)
 	}
 	for _, p := range nq.order {
-		p(selector)
+		p(selector, node.ValidColumn)
 	}
 	if offset := nq.offset; offset != nil {
 		// limit is mandatory for offset clause. We start
@@ -530,7 +568,7 @@ func (nq *NodeQuery) sqlQuery() *sql.Selector {
 	return selector
 }
 
-// NodeGroupBy is the builder for group-by Node entities.
+// NodeGroupBy is the group-by builder for Node entities.
 type NodeGroupBy struct {
 	config
 	fields []string
@@ -546,7 +584,7 @@ func (ngb *NodeGroupBy) Aggregate(fns ...AggregateFunc) *NodeGroupBy {
 	return ngb
 }
 
-// Scan applies the group-by query and scan the result into the given value.
+// Scan applies the group-by query and scans the result into the given value.
 func (ngb *NodeGroupBy) Scan(ctx context.Context, v interface{}) error {
 	query, err := ngb.path(ctx)
 	if err != nil {
@@ -563,7 +601,8 @@ func (ngb *NodeGroupBy) ScanX(ctx context.Context, v interface{}) {
 	}
 }
 
-// Strings returns list of strings from group-by. It is only allowed when querying group-by with one field.
+// Strings returns list of strings from group-by.
+// It is only allowed when executing a group-by query with one field.
 func (ngb *NodeGroupBy) Strings(ctx context.Context) ([]string, error) {
 	if len(ngb.fields) > 1 {
 		return nil, errors.New("ent: NodeGroupBy.Strings is not achievable when grouping more than 1 field")
@@ -584,7 +623,8 @@ func (ngb *NodeGroupBy) StringsX(ctx context.Context) []string {
 	return v
 }
 
-// String returns a single string from group-by. It is only allowed when querying group-by with one field.
+// String returns a single string from a group-by query.
+// It is only allowed when executing a group-by query with one field.
 func (ngb *NodeGroupBy) String(ctx context.Context) (_ string, err error) {
 	var v []string
 	if v, err = ngb.Strings(ctx); err != nil {
@@ -610,7 +650,8 @@ func (ngb *NodeGroupBy) StringX(ctx context.Context) string {
 	return v
 }
 
-// Ints returns list of ints from group-by. It is only allowed when querying group-by with one field.
+// Ints returns list of ints from group-by.
+// It is only allowed when executing a group-by query with one field.
 func (ngb *NodeGroupBy) Ints(ctx context.Context) ([]int, error) {
 	if len(ngb.fields) > 1 {
 		return nil, errors.New("ent: NodeGroupBy.Ints is not achievable when grouping more than 1 field")
@@ -631,7 +672,8 @@ func (ngb *NodeGroupBy) IntsX(ctx context.Context) []int {
 	return v
 }
 
-// Int returns a single int from group-by. It is only allowed when querying group-by with one field.
+// Int returns a single int from a group-by query.
+// It is only allowed when executing a group-by query with one field.
 func (ngb *NodeGroupBy) Int(ctx context.Context) (_ int, err error) {
 	var v []int
 	if v, err = ngb.Ints(ctx); err != nil {
@@ -657,7 +699,8 @@ func (ngb *NodeGroupBy) IntX(ctx context.Context) int {
 	return v
 }
 
-// Float64s returns list of float64s from group-by. It is only allowed when querying group-by with one field.
+// Float64s returns list of float64s from group-by.
+// It is only allowed when executing a group-by query with one field.
 func (ngb *NodeGroupBy) Float64s(ctx context.Context) ([]float64, error) {
 	if len(ngb.fields) > 1 {
 		return nil, errors.New("ent: NodeGroupBy.Float64s is not achievable when grouping more than 1 field")
@@ -678,7 +721,8 @@ func (ngb *NodeGroupBy) Float64sX(ctx context.Context) []float64 {
 	return v
 }
 
-// Float64 returns a single float64 from group-by. It is only allowed when querying group-by with one field.
+// Float64 returns a single float64 from a group-by query.
+// It is only allowed when executing a group-by query with one field.
 func (ngb *NodeGroupBy) Float64(ctx context.Context) (_ float64, err error) {
 	var v []float64
 	if v, err = ngb.Float64s(ctx); err != nil {
@@ -704,7 +748,8 @@ func (ngb *NodeGroupBy) Float64X(ctx context.Context) float64 {
 	return v
 }
 
-// Bools returns list of bools from group-by. It is only allowed when querying group-by with one field.
+// Bools returns list of bools from group-by.
+// It is only allowed when executing a group-by query with one field.
 func (ngb *NodeGroupBy) Bools(ctx context.Context) ([]bool, error) {
 	if len(ngb.fields) > 1 {
 		return nil, errors.New("ent: NodeGroupBy.Bools is not achievable when grouping more than 1 field")
@@ -725,7 +770,8 @@ func (ngb *NodeGroupBy) BoolsX(ctx context.Context) []bool {
 	return v
 }
 
-// Bool returns a single bool from group-by. It is only allowed when querying group-by with one field.
+// Bool returns a single bool from a group-by query.
+// It is only allowed when executing a group-by query with one field.
 func (ngb *NodeGroupBy) Bool(ctx context.Context) (_ bool, err error) {
 	var v []bool
 	if v, err = ngb.Bools(ctx); err != nil {
@@ -752,8 +798,17 @@ func (ngb *NodeGroupBy) BoolX(ctx context.Context) bool {
 }
 
 func (ngb *NodeGroupBy) sqlScan(ctx context.Context, v interface{}) error {
+	for _, f := range ngb.fields {
+		if !node.ValidColumn(f) {
+			return &ValidationError{Name: f, err: fmt.Errorf("invalid field %q for group-by", f)}
+		}
+	}
+	selector := ngb.sqlQuery()
+	if err := selector.Err(); err != nil {
+		return err
+	}
 	rows := &sql.Rows{}
-	query, args := ngb.sqlQuery().Query()
+	query, args := selector.Query()
 	if err := ngb.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}
@@ -766,27 +821,24 @@ func (ngb *NodeGroupBy) sqlQuery() *sql.Selector {
 	columns := make([]string, 0, len(ngb.fields)+len(ngb.fns))
 	columns = append(columns, ngb.fields...)
 	for _, fn := range ngb.fns {
-		columns = append(columns, fn(selector))
+		columns = append(columns, fn(selector, node.ValidColumn))
 	}
 	return selector.Select(columns...).GroupBy(ngb.fields...)
 }
 
-// NodeSelect is the builder for select fields of Node entities.
+// NodeSelect is the builder for selecting fields of Node entities.
 type NodeSelect struct {
-	config
-	fields []string
+	*NodeQuery
 	// intermediate query (i.e. traversal path).
-	sql  *sql.Selector
-	path func(context.Context) (*sql.Selector, error)
+	sql *sql.Selector
 }
 
-// Scan applies the selector query and scan the result into the given value.
+// Scan applies the selector query and scans the result into the given value.
 func (ns *NodeSelect) Scan(ctx context.Context, v interface{}) error {
-	query, err := ns.path(ctx)
-	if err != nil {
+	if err := ns.prepareQuery(ctx); err != nil {
 		return err
 	}
-	ns.sql = query
+	ns.sql = ns.NodeQuery.sqlQuery(ctx)
 	return ns.sqlScan(ctx, v)
 }
 
@@ -797,7 +849,7 @@ func (ns *NodeSelect) ScanX(ctx context.Context, v interface{}) {
 	}
 }
 
-// Strings returns list of strings from selector. It is only allowed when selecting one field.
+// Strings returns list of strings from a selector. It is only allowed when selecting one field.
 func (ns *NodeSelect) Strings(ctx context.Context) ([]string, error) {
 	if len(ns.fields) > 1 {
 		return nil, errors.New("ent: NodeSelect.Strings is not achievable when selecting more than 1 field")
@@ -818,7 +870,7 @@ func (ns *NodeSelect) StringsX(ctx context.Context) []string {
 	return v
 }
 
-// String returns a single string from selector. It is only allowed when selecting one field.
+// String returns a single string from a selector. It is only allowed when selecting one field.
 func (ns *NodeSelect) String(ctx context.Context) (_ string, err error) {
 	var v []string
 	if v, err = ns.Strings(ctx); err != nil {
@@ -844,7 +896,7 @@ func (ns *NodeSelect) StringX(ctx context.Context) string {
 	return v
 }
 
-// Ints returns list of ints from selector. It is only allowed when selecting one field.
+// Ints returns list of ints from a selector. It is only allowed when selecting one field.
 func (ns *NodeSelect) Ints(ctx context.Context) ([]int, error) {
 	if len(ns.fields) > 1 {
 		return nil, errors.New("ent: NodeSelect.Ints is not achievable when selecting more than 1 field")
@@ -865,7 +917,7 @@ func (ns *NodeSelect) IntsX(ctx context.Context) []int {
 	return v
 }
 
-// Int returns a single int from selector. It is only allowed when selecting one field.
+// Int returns a single int from a selector. It is only allowed when selecting one field.
 func (ns *NodeSelect) Int(ctx context.Context) (_ int, err error) {
 	var v []int
 	if v, err = ns.Ints(ctx); err != nil {
@@ -891,7 +943,7 @@ func (ns *NodeSelect) IntX(ctx context.Context) int {
 	return v
 }
 
-// Float64s returns list of float64s from selector. It is only allowed when selecting one field.
+// Float64s returns list of float64s from a selector. It is only allowed when selecting one field.
 func (ns *NodeSelect) Float64s(ctx context.Context) ([]float64, error) {
 	if len(ns.fields) > 1 {
 		return nil, errors.New("ent: NodeSelect.Float64s is not achievable when selecting more than 1 field")
@@ -912,7 +964,7 @@ func (ns *NodeSelect) Float64sX(ctx context.Context) []float64 {
 	return v
 }
 
-// Float64 returns a single float64 from selector. It is only allowed when selecting one field.
+// Float64 returns a single float64 from a selector. It is only allowed when selecting one field.
 func (ns *NodeSelect) Float64(ctx context.Context) (_ float64, err error) {
 	var v []float64
 	if v, err = ns.Float64s(ctx); err != nil {
@@ -938,7 +990,7 @@ func (ns *NodeSelect) Float64X(ctx context.Context) float64 {
 	return v
 }
 
-// Bools returns list of bools from selector. It is only allowed when selecting one field.
+// Bools returns list of bools from a selector. It is only allowed when selecting one field.
 func (ns *NodeSelect) Bools(ctx context.Context) ([]bool, error) {
 	if len(ns.fields) > 1 {
 		return nil, errors.New("ent: NodeSelect.Bools is not achievable when selecting more than 1 field")
@@ -959,7 +1011,7 @@ func (ns *NodeSelect) BoolsX(ctx context.Context) []bool {
 	return v
 }
 
-// Bool returns a single bool from selector. It is only allowed when selecting one field.
+// Bool returns a single bool from a selector. It is only allowed when selecting one field.
 func (ns *NodeSelect) Bool(ctx context.Context) (_ bool, err error) {
 	var v []bool
 	if v, err = ns.Bools(ctx); err != nil {

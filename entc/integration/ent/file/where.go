@@ -7,12 +7,12 @@
 package file
 
 import (
-	"github.com/facebook/ent/dialect/sql"
-	"github.com/facebook/ent/dialect/sql/sqlgraph"
-	"github.com/facebook/ent/entc/integration/ent/predicate"
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/entc/integration/ent/predicate"
 )
 
-// ID filters vertices based on their identifier.
+// ID filters vertices based on their ID field.
 func ID(id int) predicate.File {
 	return predicate.File(func(s *sql.Selector) {
 		s.Where(sql.EQ(s.C(FieldID), id))
@@ -120,6 +120,13 @@ func User(v string) predicate.File {
 func Group(v string) predicate.File {
 	return predicate.File(func(s *sql.Selector) {
 		s.Where(sql.EQ(s.C(FieldGroup), v))
+	})
+}
+
+// Op applies equality check predicate on the "op" field. It's identical to OpEQ.
+func Op(v bool) predicate.File {
+	return predicate.File(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldOp), v))
 	})
 }
 
@@ -560,6 +567,34 @@ func GroupContainsFold(v string) predicate.File {
 	})
 }
 
+// OpEQ applies the EQ predicate on the "op" field.
+func OpEQ(v bool) predicate.File {
+	return predicate.File(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldOp), v))
+	})
+}
+
+// OpNEQ applies the NEQ predicate on the "op" field.
+func OpNEQ(v bool) predicate.File {
+	return predicate.File(func(s *sql.Selector) {
+		s.Where(sql.NEQ(s.C(FieldOp), v))
+	})
+}
+
+// OpIsNil applies the IsNil predicate on the "op" field.
+func OpIsNil() predicate.File {
+	return predicate.File(func(s *sql.Selector) {
+		s.Where(sql.IsNull(s.C(FieldOp)))
+	})
+}
+
+// OpNotNil applies the NotNil predicate on the "op" field.
+func OpNotNil() predicate.File {
+	return predicate.File(func(s *sql.Selector) {
+		s.Where(sql.NotNull(s.C(FieldOp)))
+	})
+}
+
 // HasOwner applies the HasEdge predicate on the "owner" edge.
 func HasOwner() predicate.File {
 	return predicate.File(func(s *sql.Selector) {
@@ -644,7 +679,7 @@ func HasFieldWith(preds ...predicate.FieldType) predicate.File {
 	})
 }
 
-// And groups list of predicates with the AND operator between them.
+// And groups predicates with the AND operator between them.
 func And(predicates ...predicate.File) predicate.File {
 	return predicate.File(func(s *sql.Selector) {
 		s1 := s.Clone().SetP(nil)
@@ -655,7 +690,7 @@ func And(predicates ...predicate.File) predicate.File {
 	})
 }
 
-// Or groups list of predicates with the OR operator between them.
+// Or groups predicates with the OR operator between them.
 func Or(predicates ...predicate.File) predicate.File {
 	return predicate.File(func(s *sql.Selector) {
 		s1 := s.Clone().SetP(nil)

@@ -7,26 +7,35 @@
 package entv2
 
 import (
-	"github.com/facebook/ent/entc/integration/migrate/entv2/schema"
-	"github.com/facebook/ent/entc/integration/migrate/entv2/user"
+	"entgo.io/ent/entc/integration/migrate/entv2/schema"
+	"entgo.io/ent/entc/integration/migrate/entv2/user"
 )
 
-// The init function reads all schema descriptors with runtime
-// code (default values, validators or hooks) and stitches it
+// The init function reads all schema descriptors with runtime code
+// (default values, validators, hooks and policies) and stitches it
 // to their package variables.
 func init() {
 	userMixin := schema.User{}.Mixin()
 	userMixinFields0 := userMixin[0].Fields()
+	_ = userMixinFields0
 	userFields := schema.User{}.Fields()
 	_ = userFields
 	// userDescMixedString is the schema descriptor for mixed_string field.
 	userDescMixedString := userMixinFields0[0].Descriptor()
 	// user.DefaultMixedString holds the default value on creation for the mixed_string field.
 	user.DefaultMixedString = userDescMixedString.Default.(string)
+	// userDescNickname is the schema descriptor for nickname field.
+	userDescNickname := userFields[3].Descriptor()
+	// user.NicknameValidator is a validator for the "nickname" field. It is called by the builders before save.
+	user.NicknameValidator = userDescNickname.Validators[0].(func(string) error)
 	// userDescPhone is the schema descriptor for phone field.
 	userDescPhone := userFields[4].Descriptor()
 	// user.DefaultPhone holds the default value on creation for the phone field.
 	user.DefaultPhone = userDescPhone.Default.(string)
+	// userDescBuffer is the schema descriptor for buffer field.
+	userDescBuffer := userFields[5].Descriptor()
+	// user.DefaultBuffer holds the default value on creation for the buffer field.
+	user.DefaultBuffer = userDescBuffer.Default.(func() []byte)
 	// userDescTitle is the schema descriptor for title field.
 	userDescTitle := userFields[6].Descriptor()
 	// user.DefaultTitle holds the default value on creation for the title field.

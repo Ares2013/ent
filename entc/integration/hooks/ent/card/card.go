@@ -9,7 +9,7 @@ package card
 import (
 	"time"
 
-	"github.com/facebook/ent"
+	"entgo.io/ent"
 )
 
 const (
@@ -23,10 +23,10 @@ const (
 	FieldName = "name"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
 	FieldCreatedAt = "created_at"
-
+	// FieldInHook holds the string denoting the in_hook field in the database.
+	FieldInHook = "in_hook"
 	// EdgeOwner holds the string denoting the owner edge name in mutations.
 	EdgeOwner = "owner"
-
 	// Table holds the table name of the card in the database.
 	Table = "cards"
 	// OwnerTable is the table the holds the owner relation/edge.
@@ -44,25 +44,42 @@ var Columns = []string{
 	FieldNumber,
 	FieldName,
 	FieldCreatedAt,
+	FieldInHook,
 }
 
-// ForeignKeys holds the SQL foreign-keys that are owned by the Card type.
+// ForeignKeys holds the SQL foreign-keys that are owned by the "cards"
+// table and are not defined as standalone fields in the schema.
 var ForeignKeys = []string{
 	"user_cards",
+}
+
+// ValidColumn reports if the column name is valid (part of the table columns).
+func ValidColumn(column string) bool {
+	for i := range Columns {
+		if column == Columns[i] {
+			return true
+		}
+	}
+	for i := range ForeignKeys {
+		if column == ForeignKeys[i] {
+			return true
+		}
+	}
+	return false
 }
 
 // Note that the variables below are initialized by the runtime
 // package on the initialization of the application. Therefore,
 // it should be imported in the main as follows:
 //
-//	import _ "github.com/facebook/ent/entc/integration/hooks/ent/runtime"
+//	import _ "entgo.io/ent/entc/integration/hooks/ent/runtime"
 //
 var (
 	Hooks [3]ent.Hook
-	// DefaultNumber holds the default value on creation for the number field.
+	// DefaultNumber holds the default value on creation for the "number" field.
 	DefaultNumber string
 	// NumberValidator is a validator for the "number" field. It is called by the builders before save.
 	NumberValidator func(string) error
-	// DefaultCreatedAt holds the default value on creation for the created_at field.
+	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
 	DefaultCreatedAt func() time.Time
 )

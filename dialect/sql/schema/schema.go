@@ -10,8 +10,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/facebook/ent/dialect/sql"
-	"github.com/facebook/ent/schema/field"
+	"entgo.io/ent/dialect/entsql"
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/schema/field"
 )
 
 const (
@@ -33,6 +34,7 @@ type Table struct {
 	Indexes     []*Index
 	PrimaryKey  []*Column
 	ForeignKeys []*ForeignKey
+	Annotation  *entsql.Annotation
 }
 
 // NewTable returns a new table with the given name.
@@ -45,7 +47,8 @@ func NewTable(name string) *Table {
 
 // AddPrimary adds a new primary key to the table.
 func (t *Table) AddPrimary(c *Column) *Table {
-	t.Columns = append(t.Columns, c)
+	c.Key = PrimaryKey
+	t.AddColumn(c)
 	t.PrimaryKey = append(t.PrimaryKey, c)
 	return t
 }
@@ -60,6 +63,18 @@ func (t *Table) AddForeignKey(fk *ForeignKey) *Table {
 func (t *Table) AddColumn(c *Column) *Table {
 	t.columns[c.Name] = c
 	t.Columns = append(t.Columns, c)
+	return t
+}
+
+// HasColumn reports if the table contains a column with the given name.
+func (t *Table) HasColumn(name string) bool {
+	_, ok := t.columns[name]
+	return ok
+}
+
+// SetAnnotation the entsql.Annotation on the table.
+func (t *Table) SetAnnotation(ant *entsql.Annotation) *Table {
+	t.Annotation = ant
 	return t
 }
 
@@ -100,7 +115,7 @@ func (t *Table) column(name string) (*Column, bool) {
 // index returns a table index by its name.
 func (t *Table) index(name string) (*Index, bool) {
 	for _, idx := range t.Indexes {
-		if idx.Name == name {
+		if name == idx.Name || name == idx.realname {
 			return idx, true
 		}
 		// Same as below, there are cases where the index name
@@ -122,6 +137,19 @@ func (t *Table) index(name string) (*Index, bool) {
 		return &Index{Name: name, Unique: c.Unique, Columns: []*Column{c}, columns: []string{c.Name}}, true
 	}
 	return nil, false
+}
+
+// hasIndex reports if the table has at least one index that matches the given names.
+func (t *Table) hasIndex(names ...string) bool {
+	for i := range names {
+		if names[i] == "" {
+			continue
+		}
+		if _, ok := t.index(names[i]); ok {
+			return true
+		}
+	}
+	return false
 }
 
 // fk returns a table foreign-key by its symbol.
@@ -165,7 +193,11 @@ func (c *Column) PrimaryKey() bool { return c.Key == PrimaryKey }
 func (c *Column) ConvertibleTo(d *Column) bool {
 	switch {
 	case c.Type == d.Type:
-		return c.Size <= d.Size
+		if c.Size != 0 && d.Size != 0 {
+			// Types match and have a size constraint.
+			return c.Size <= d.Size
+		}
+		return true
 	case c.IntType() && d.IntType() || c.UintType() && d.UintType():
 		return c.Type <= d.Type
 	case c.UintType() && d.IntType():
@@ -173,6 +205,8 @@ func (c *Column) ConvertibleTo(d *Column) bool {
 		return c.Type-field.TypeUint8 <= d.Type-field.TypeInt8
 	case c.Type == field.TypeString && d.Type == field.TypeEnum ||
 		c.Type == field.TypeEnum && d.Type == field.TypeString:
+		return true
+	case c.Type.Integer() && d.Type == field.TypeString:
 		return true
 	}
 	return c.FloatType() && d.FloatType()
@@ -194,37 +228,37 @@ func (c *Column) ScanDefault(value string) error {
 	case c.IntType():
 		v := &sql.NullInt64{}
 		if err := v.Scan(value); err != nil {
-			return fmt.Errorf("scanning int value for column %q: %v", c.Name, err)
+			return fmt.Errorf("scanning int value for column %q: %w", c.Name, err)
 		}
 		c.Default = v.Int64
 	case c.UintType():
 		v := &sql.NullInt64{}
 		if err := v.Scan(value); err != nil {
-			return fmt.Errorf("scanning uint value for column %q: %v", c.Name, err)
+			return fmt.Errorf("scanning uint value for column %q: %w", c.Name, err)
 		}
 		c.Default = uint64(v.Int64)
 	case c.FloatType():
 		v := &sql.NullFloat64{}
 		if err := v.Scan(value); err != nil {
-			return fmt.Errorf("scanning float value for column %q: %v", c.Name, err)
+			return fmt.Errorf("scanning float value for column %q: %w", c.Name, err)
 		}
 		c.Default = v.Float64
 	case c.Type == field.TypeBool:
 		v := &sql.NullBool{}
 		if err := v.Scan(value); err != nil {
-			return fmt.Errorf("scanning bool value for column %q: %v", c.Name, err)
+			return fmt.Errorf("scanning bool value for column %q: %w", c.Name, err)
 		}
 		c.Default = v.Bool
 	case c.Type == field.TypeString || c.Type == field.TypeEnum:
 		v := &sql.NullString{}
 		if err := v.Scan(value); err != nil {
-			return fmt.Errorf("scanning string value for column %q: %v", c.Name, err)
+			return fmt.Errorf("scanning string value for column %q: %w", c.Name, err)
 		}
 		c.Default = v.String
 	case c.Type == field.TypeJSON:
 		v := &sql.NullString{}
 		if err := v.Scan(value); err != nil {
-			return fmt.Errorf("scanning json value for column %q: %v", c.Name, err)
+			return fmt.Errorf("scanning json value for column %q: %w", c.Name, err)
 		}
 		c.Default = v.String
 	default:
@@ -245,7 +279,7 @@ func (c *Column) defaultValue(b *sql.ColumnBuilder) {
 			attr += strconv.FormatBool(v)
 		case string:
 			// Escape single quote by replacing each with 2.
-			attr += fmt.Sprintf("'%s'", strings.Replace(v, "'", "''", -1))
+			attr += fmt.Sprintf("'%s'", strings.ReplaceAll(v, "'", "''"))
 		default:
 			attr += fmt.Sprint(v)
 		}
@@ -282,22 +316,6 @@ func (c *Column) nullable(b *sql.ColumnBuilder) {
 		attr = "NOT " + attr
 	}
 	b.Attr(attr)
-}
-
-// defaultSize returns the default size for MySQL varchar type based
-// on column size, charset and table indexes, in order to avoid index
-// prefix key limit (767).
-func (c *Column) defaultSize(version string) int64 {
-	size := DefaultStringLen
-	switch {
-	// version is >= 5.7.
-	case compareVersions(version, "5.7.0") != -1:
-	// non-unique, or not part of any index (reaching the error 1071).
-	case !c.Unique && len(c.indexes) == 0:
-	default:
-		size = 191
-	}
-	return size
 }
 
 // scanTypeOr returns the scanning type or the given value.
@@ -357,7 +375,7 @@ func (r ReferenceOption) ConstName() string {
 	if r == NoAction {
 		return ""
 	}
-	return strings.Replace(strings.Title(strings.ToLower(string(r))), " ", "", -1)
+	return strings.ReplaceAll(strings.Title(strings.ToLower(string(r))), " ", "")
 }
 
 // Index definition for table index.

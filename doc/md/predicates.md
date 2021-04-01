@@ -102,4 +102,17 @@ users := client.User.
 		s.Where(sqljson.HasKey(user.FieldURL, sqljson.Path("Scheme")))
 	})).
 	AllX(ctx)
+
+todos := client.Todo.Query().
+    Where(func(s *sql.Selector) {
+        t := sql.Table(user.Table)
+        s.Where(
+            sql.In(
+                s.C(todo.FieldUserID),
+                sql.Select(t.C(user.FieldID)).From(t).Where(sql.In(t.C(user.FieldName), names...)),
+            ),
+        )
+    }).
+    AllX(ctx)
 ```
+

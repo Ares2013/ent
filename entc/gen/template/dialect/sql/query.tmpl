@@ -78,6 +78,12 @@ func ({{ $receiver }} *{{ $builder }}) sqlAll(ctx context.Context) ([]*{{ $.Name
 
 func ({{ $receiver }} *{{ $builder }}) sqlCount(ctx context.Context) (int, error) {
 	_spec := {{ $receiver }}.querySpec()
+	{{- /* Allow mutating the sqlgraph.QuerySpec by ent extensions or user templates.*/}}
+	{{- with $tmpls := matchTemplate "dialect/sql/query/spec/*" }}
+		{{- range $tmpl := $tmpls }}
+			{{- xtemplate $tmpl $ }}
+		{{- end }}
+	{{- end }}
 	return sqlgraph.CountNodes(ctx, {{ $receiver }}.driver, _spec)
 }
 
@@ -130,7 +136,7 @@ func ({{ $receiver }} *{{ $builder }}) querySpec() *sqlgraph.QuerySpec {
 	if ps := {{ $receiver }}.order; len(ps) > 0 {
 		_spec.Order = func(selector *sql.Selector) {
 			for i := range ps {
-				ps[i](selector, {{ $.Package }}.ValidColumn)
+				ps[i](selector)
 			}
 		}
 	}
@@ -171,7 +177,7 @@ func ({{ $receiver }} *{{ $builder }}) sqlQuery(ctx context.Context) *sql.Select
 		p(selector)
 	}
 	for _, p := range {{ $receiver }}.order {
-		p(selector, {{ $.Package }}.ValidColumn)
+		p(selector)
 	}
 	if offset := {{ $receiver }}.offset; offset != nil {
 		// limit is mandatory for offset clause. We start

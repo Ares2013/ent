@@ -1,5 +1,27 @@
 module.exports={
   "title": "ent",
+  "i18n": {
+    "defaultLocale": 'en',
+    "locales": ['en', 'zh', 'ja', 'he'],
+    "localeConfigs": {
+      "en": {
+        "label": 'English',
+        "direction": 'ltr',
+      },
+      "zh": {
+        "label": 'Chinese',
+        "direction": 'ltr',
+      },
+      "ja": {
+        "label": 'Japanese',
+        "direction": 'ltr',
+      },
+      "he": {
+        "label": 'Hebrew',
+        "direction": 'rtl',
+      },
+    },
+  },
   "tagline": "An entity framework for Go",
   "url": "https://entgo.io",
   "baseUrl": "/",
@@ -85,6 +107,18 @@ module.exports={
         },
         {to: 'blog', label: 'Blog', position: 'left'},
         {
+          href: 'https://app.slack.com/client/T029RQSE6/C01FMSQDT53',
+          position: 'right',
+          className: 'header-slack-link',
+          'aria-label': 'Slack channel',
+        },
+        {
+          href: 'https://www.getrevue.co/profile/ent',
+          position: 'right',
+          className: 'header-newsletter-link',
+          'aria-label': 'Newsletter page',
+        },
+        {
           href: 'https://twitter.com/entgo_io',
           position: 'right',
           className: 'header-twitter-link',
@@ -95,6 +129,16 @@ module.exports={
           position: 'right',
           className: 'header-github-link',
           'aria-label': 'GitHub repository',
+        },
+        {
+          type: 'localeDropdown',
+          position: 'right',
+          dropdownItemsAfter: [
+            {
+              to: '/docs/translations',
+              label: 'Help Us Translate',
+            },
+          ],
         },
       ]
     },

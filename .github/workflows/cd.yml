@@ -18,6 +18,11 @@ jobs:
       - name: Install Dependencies
         working-directory: doc/website
         run: yarn
+      - name: Sync Translation
+        working-directory: doc/website
+        run: yarn crowdin:sync
+        env:
+          CROWDIN_TOKEN: ${{ secrets.CROWDIN_TOKEN }}
       - name: Build Docs
         working-directory: doc/website
         run: yarn build
